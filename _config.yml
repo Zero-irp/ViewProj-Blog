@@ -1,5 +1,6 @@
-title: My Reverse Engineering Blog
-description: Insights from my journey into binaries and beyond.
+title: ViewProj Reverse Engineering Blog
+description: Analysis of the nonstandard view-projection pipeline in Ghost of Tsushima
 theme: minima
+baseurl: "/ViewProj-Blog" # Must be repo name
 plugins:
   - jekyll-feed
