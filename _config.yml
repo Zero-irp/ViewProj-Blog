@@ -1,0 +1,5 @@
+title: My Reverse Engineering Blog
+description: Insights from my journey into binaries and beyond.
+theme: minima
+plugins:
+  - jekyll-feed
