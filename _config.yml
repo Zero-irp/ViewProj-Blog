@@ -1,6 +1,11 @@
-title: ViewProj Reverse Engineering Blog
-description: Analysis of the nonstandard view-projection pipeline in Ghost of Tsushima
+title: "ViewProj Blog"
+description: "Reverse Engineering the ViewProjection Pipeline in Ghost of Tsushima"
+baseurl: "/ViewProj-Blog"
+url: "https://zero-irp.github.io"
 theme: minima
-baseurl: "/ViewProj-Blog" # Must be repo name
 plugins:
   - jekyll-feed
+
+author: Zero_IRP
+email: Zer0_1rp@proton.me
+show_excerpts: true
