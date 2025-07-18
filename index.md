@@ -10,6 +10,9 @@ Welcome to my blog series on reverse engineering the matrix pipeline of a AAA ga
 ## Parts
 
 - [Part 1: Introduction]({{ site.baseurl }}/part-1-intro)
-- [Part 2: View Matrix]({{ site.baseurl }}/part-2-view-matrix)
-- [Part 3: Projection Matrix]({{ site.baseurl }}/part-3-projection-matrix)
-- [Part 4: SIMD Math & Junk Code]({{ site.baseurl }}/part-4-simd-junk)
+- <div style="color:blue">Part 2: Understanding 3D Transformation Matrices</div>
+	- [Part 2.1: View Matrix]({{ site.baseurl }}/part-2.1-view-matrix)
+	- [Part 2.2: Projection Matrix]({{ site.baseurl }}/part-2.2-projection-matrix)
+	- [Part 2.3: View Projection Matrix]({{ site.baseurl }}/part-2.3-View-Projection-matrix)
+- [Part 3: Finding & Reversing Matrices]({{ site.baseurl }}/part-3-finding-and-reversing-matrices)
+- [Part 4: Reversing SIMD Math]({{ site.baseurl }}/part-4-reversing-simd-math)

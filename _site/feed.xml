@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.4.1">Jekyll</generator><link href="http://localhost:4000/ViewProj-Blog/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/ViewProj-Blog/" rel="alternate" type="text/html" /><updated>2025-07-18T19:17:58+05:30</updated><id>http://localhost:4000/ViewProj-Blog/feed.xml</id><title type="html">Reversing The ViewProjection Matrix</title><subtitle>Reverse Engineering the ViewProjection Pipeline in Ghost of Tsushima</subtitle><author><name>z1rp</name></author><entry><title type="html">Part 1: Introduction</title><link href="http://localhost:4000/ViewProj-Blog/part-1-intro/" rel="alternate" type="text/html" title="Part 1: Introduction" /><published>2025-07-17T00:00:00+05:30</published><updated>2025-07-17T00:00:00+05:30</updated><id>http://localhost:4000/ViewProj-Blog/part-1-intro</id><content type="html" xml:base="http://localhost:4000/ViewProj-Blog/part-1-intro/"><![CDATA[<p><strong>Prerequisites</strong></p>
+<ul>
+  <li>Understanding the assembly language (x86-64)</li>
+  <li>Basics in Reverse Engineering</li>
+  <li>Intermediary knowledge in C++</li>
+  <li>Windows API Familiarity</li>
+</ul>
+
+<p><strong>What Are we Trying to achieve?</strong></p>
+
+<p>In this blog series, we’re going to reverse engineer how <em>Ghost of Tsushima</em> constructs its <strong>ViewProjection matrix</strong> — the thing that turns 3D world positions into 2D screen coordinates. This is super important for stuff like ESP overlays (you can’t draw a box around an enemy if you don’t know where they are on screen).</p>
+
+<p>We’ll be reverse engineering the game’s rendering pipeline using tools like IDA Pro, breaking down how the ViewProjection matrix is built step by step including all the weird SIMD instructions it uses. The goal is to figure out where it is, how everything fits together, how its constructed and used in the game.</p>
+
+<p><strong>What is an ESP?</strong></p>
+
+<p>ESP stands for <em>Extra-Sensory Perception</em>. In game hacking, it refers to any feature that shows you information you normally wouldn’t be able to see — stuff the game doesn’t intend to show.
+For example, an ESP might let you:</p>
+<ul>
+  <li>See players through walls</li>
+  <li>Know their exact health</li>
+  <li>Track what’s in their inventory</li>
+  <li>Spot hidden loot, traps etc…</li>
+</ul>
+
+<p>This gives a huge unfair advantage over others.</p>
+
+<p><strong>What it should look like:</strong></p>
+
+<h2><img src="/ViewProj-Blog/assets/images/GotEsp-1.png" alt="ESP-Image1" /></h2>
+<p><img src="/ViewProj-Blog/assets/images/GotEsp-2.png" alt="ESP-Image2" /></p>
+
+<p>Snippets of what we will be working with:</p>
+
+<p><strong>IDA PRO:</strong>
+<img src="/ViewProj-Blog/assets/images/ida-view.png" alt="IDA-screenshot" /></p>
+
+<p><strong>Cheat Engine:</strong>
+<img src="/ViewProj-Blog/assets/images/CheatEngine-view.png" alt="CheatEngine-screenshot" /></p>
+
+<p><strong>Visual Studio:</strong>
+<img src="/ViewProj-Blog/assets/images/VisualStudio-view.png" alt="VisualStudio-screenshot" /></p>
+
+<p><strong>Reclass:</strong>
+<img src="/ViewProj-Blog/assets/images/Reclass-view.png" alt="Reclass-screenshot" /></p>
+
+<p>This blog series is just me sharing what I’ve figured out so far while reverse engineering <em>Ghost of Tsushima</em>. There’s always more to understand, and I’m sure some things I say might not be 100% perfect, so if you spot something I missed, or you have better insights, I’d really love to hear from you.</p>
+
+<p>Feel free to reach out to me:</p>
+<ul>
+  <li>Discord: z1rp#1337</li>
+  <li>Email: <a href="mailto:Zer0_1rp@proton.me">Zer0_1rp@proton.me</a></li>
+</ul>]]></content><author><name>z1rp</name></author><summary type="html"><![CDATA[Prerequisites Understanding the assembly language (x86-64) Basics in Reverse Engineering Intermediary knowledge in C++ Windows API Familiarity]]></summary></entry></feed>
