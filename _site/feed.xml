@@ -1,4 +1,136 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.4.1">Jekyll</generator><link href="http://localhost:4000/ViewProj-Blog/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/ViewProj-Blog/" rel="alternate" type="text/html" /><updated>2025-07-20T02:41:52+05:30</updated><id>http://localhost:4000/ViewProj-Blog/feed.xml</id><title type="html">Reversing The ViewProjection Matrix</title><subtitle>Reverse Engineering the ViewProjection Pipeline in Ghost of Tsushima</subtitle><author><name>z1rp</name></author><entry><title type="html">Part 2.1: View Matrix</title><link href="http://localhost:4000/ViewProj-Blog/part-2.1-view-matrix/" rel="alternate" type="text/html" title="Part 2.1: View Matrix" /><published>2025-07-17T00:00:00+05:30</published><updated>2025-07-17T00:00:00+05:30</updated><id>http://localhost:4000/ViewProj-Blog/part-2.1-view-matrix</id><content type="html" xml:base="http://localhost:4000/ViewProj-Blog/part-2.1-view-matrix/"><![CDATA[<h3 id="introduction">Introduction</h3>
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.4.1">Jekyll</generator><link href="http://localhost:4000/ViewProj-Blog/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/ViewProj-Blog/" rel="alternate" type="text/html" /><updated>2025-07-20T03:49:53+05:30</updated><id>http://localhost:4000/ViewProj-Blog/feed.xml</id><title type="html">Reversing The ViewProjection Matrix</title><subtitle>Reverse Engineering the ViewProjection Pipeline in Ghost of Tsushima</subtitle><author><name>z1rp</name></author><entry><title type="html">Part 2.2: Projection Matrix</title><link href="http://localhost:4000/ViewProj-Blog/part-2.2-projection-matrix/" rel="alternate" type="text/html" title="Part 2.2: Projection Matrix" /><published>2025-07-17T00:00:00+05:30</published><updated>2025-07-17T00:00:00+05:30</updated><id>http://localhost:4000/ViewProj-Blog/part-2.2-projection-matrix</id><content type="html" xml:base="http://localhost:4000/ViewProj-Blog/part-2.2-projection-matrix/"><![CDATA[<h3 id="what-is-the-projection-matrix"><strong>What is the Projection Matrix?</strong></h3>
+
+<p>While the View Matrix transforms world coordinates into the camera’s local space, the Projection Matrix transforms that 3D camera space into a clipped 2D space that’s ready for 
+display on a screen.<br />
+This is the step where perspective is introduced where far objects look smaller, and near objects look larger.</p>
+<blockquote>
+  <p>view space -&gt; clip space</p>
+</blockquote>
+
+<p>The projection matrix defines how the 3D scene (Game) is projected onto a 2D surface (Your screen).<br />
+It Determines:</p>
+<ul>
+  <li>What part of the world is visible through the camera (field of view).</li>
+  <li>How deep the camera can see (near/far clipping planes).</li>
+  <li>How the perspective distortion should look (objects farther away appear smaller etc…)</li>
+  <li>Defines the 3D view Frustum</li>
+</ul>
+
+<p>There are two main types of projection matrices</p>
+<ul>
+  <li><strong>Perspective Projection</strong></li>
+  <li><strong>Orthographic Projection</strong></li>
+</ul>
+
+<p>Here we will only be looking at the Perspective Projection Matrix.</p>
+
+<h3 id="what-the-projection-matrix-does"><strong>What the Projection Matrix Does:</strong></h3>
+
+<p>The projection matrix warps the view space into what’s known as Normalized Device Coordinates (NDC).<br />
+In NDC:</p>
+<ul>
+  <li>The x, y, and z coordinates are squeezed into a cube from -1 to 1.</li>
+  <li>Everything inside this cube is visible.</li>
+  <li>Everything outside is clipped (not rendered).</li>
+</ul>
+
+<p>The <em>Projection Matrix</em> represnets how the camera sees. It gives the world its sense of depth and perspective, and its parameters -
+FOV, aspect ratio, near and far planes define the visible 3D frustum.</p>
+
+<h3 id="layout-of-the-perspective-projection-matrix">Layout of the Perspective Projection Matrix</h3>
+
+<p>Here is the standard layout of a row-major perspective projection matrix (DirectX):</p>
+
+<table>
+  <tbody>
+    <tr>
+      <td>xScale</td>
+      <td>0</td>
+      <td>0</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <td>0</td>
+      <td>yScale</td>
+      <td>0</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <td>0</td>
+      <td>0</td>
+      <td>zfar/(zfar - znear)</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <td>0</td>
+      <td>0</td>
+      <td>-znear*zfar/(zfar - znear)</td>
+      <td>0</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Lets breakdown all the parameters:</p>
+<ul>
+  <li><strong>zNear:</strong> Near clip plane</li>
+  <li><strong>zFar:</strong> Far clip plane</li>
+  <li><strong>xScale:</strong> 1 / tan(Fov_X/2)</li>
+  <li><strong>yScale:</strong> 1 / tan(Fov_Y/2) or 1 / AspectRatio * tan(Fov_X/2) where Fov_Y = (Aspect Ratio * Fov_X)</li>
+</ul>
+
+<p><em>We’ll later see how this matrix fits into the full pipeline and how the 3D position finally lands on your screen.</em></p>]]></content><author><name>z1rp</name></author><summary type="html"><![CDATA[What is the Projection Matrix?]]></summary></entry><entry><title type="html">Part 1: Introduction</title><link href="http://localhost:4000/ViewProj-Blog/part-1-intro/" rel="alternate" type="text/html" title="Part 1: Introduction" /><published>2025-07-17T00:00:00+05:30</published><updated>2025-07-17T00:00:00+05:30</updated><id>http://localhost:4000/ViewProj-Blog/part-1-intro</id><content type="html" xml:base="http://localhost:4000/ViewProj-Blog/part-1-intro/"><![CDATA[<p><strong>Prerequisites</strong></p>
+<ul>
+  <li>Understanding the assembly language (x86-64)</li>
+  <li>Basics in Reverse Engineering</li>
+  <li>Intermediary knowledge in C++</li>
+  <li>Windows API Familiarity</li>
+</ul>
+
+<p><strong>What Are we Trying to achieve?</strong></p>
+
+<p>In this blog series, we’re going to reverse engineer how <em>Ghost of Tsushima</em> constructs its <strong>ViewProjection matrix</strong> — the thing that turns 3D world positions into 2D screen coordinates. This is super important for stuff like ESP overlays (you can’t draw a box around an enemy if you don’t know where they are on screen).</p>
+
+<p>We’ll be reverse engineering the game’s rendering pipeline using tools like IDA Pro, breaking down how the ViewProjection matrix is built step by step including all the weird SIMD instructions it uses. The goal is to figure out where it is, how everything fits together, how its constructed and used in the game.</p>
+
+<p><strong>What is an ESP?</strong></p>
+
+<p>ESP stands for <em>Extra-Sensory Perception</em>. In game hacking, it refers to any feature that shows you information you normally wouldn’t be able to see — stuff the game doesn’t intend to show.
+For example, an ESP might let you:</p>
+<ul>
+  <li>See players through walls</li>
+  <li>Know their exact health</li>
+  <li>Track what’s in their inventory</li>
+  <li>Spot hidden loot, traps etc…</li>
+</ul>
+
+<p>This gives a huge unfair advantage over others.</p>
+
+<p><strong>What it should look like:</strong></p>
+
+<h2><img src="/ViewProj-Blog/assets/images/part-1/GotEsp-1.png" alt="ESP-Image1" /></h2>
+<p><img src="/ViewProj-Blog/assets/images/part-1/GotEsp-2.png" alt="ESP-Image2" /></p>
+
+<p>Snippets of what we will be working with:</p>
+
+<p><strong>IDA PRO:</strong>
+<img src="/ViewProj-Blog/assets/images/part-1/ida-view.png" alt="IDA-screenshot" /></p>
+
+<p><strong>Cheat Engine:</strong>
+<img src="/ViewProj-Blog/assets/images/part-1/CheatEngine-view.png" alt="CheatEngine-screenshot" /></p>
+
+<p><strong>Visual Studio:</strong>
+<img src="/ViewProj-Blog/assets/images/part-1/VisualStudio-view.png" alt="VisualStudio-screenshot" /></p>
+
+<p><strong>Reclass:</strong>
+<img src="/ViewProj-Blog/assets/images/part-1/Reclass-view.png" alt="Reclass-screenshot" /></p>
+
+<p>This blog series is just me sharing what I’ve figured out so far while reverse engineering <em>Ghost of Tsushima</em>. There’s always more to understand, and I’m sure some things I say might not be 100% perfect, so if you spot something I missed, or you have better insights, I’d really love to hear from you.</p>
+
+<p>Feel free to reach out to me:</p>
+<ul>
+  <li>Discord: z1rp#1337</li>
+  <li>Email: <a href="mailto:Zer0_1rp@proton.me">Zer0_1rp@proton.me</a></li>
+</ul>]]></content><author><name>z1rp</name></author><summary type="html"><![CDATA[Prerequisites Understanding the assembly language (x86-64) Basics in Reverse Engineering Intermediary knowledge in C++ Windows API Familiarity]]></summary></entry><entry><title type="html">Part 2.1: View Matrix</title><link href="http://localhost:4000/ViewProj-Blog/part-2.1-view-matrix/" rel="alternate" type="text/html" title="Part 2.1: View Matrix" /><published>2025-07-17T00:00:00+05:30</published><updated>2025-07-17T00:00:00+05:30</updated><id>http://localhost:4000/ViewProj-Blog/part-2.1-view-matrix</id><content type="html" xml:base="http://localhost:4000/ViewProj-Blog/part-2.1-view-matrix/"><![CDATA[<h3 id="introduction">Introduction</h3>
 
 <p>In 3D computer graphics, transformation matrices are fundamental tools that allow us to represent and manipulate objects in virtual space. 
 Three particularly important matrices work together to take 3D world coordinates and transform them into 2D screen coordinates: the 
@@ -155,6 +287,8 @@ It defines the camera’s local Z-axis</p>
   <p>Forward Vector = (Camera Position - Camera Look At)</p>
 </blockquote>
 
+<p>These variables (eg: Right.x or forward.y etc) can map from <em>-1</em> to <em>1</em> or <em>0</em> to <em>1</em> depending on the graphics Api used (eg: directx/OpenGL).</p>
+
 <p><strong>Translation Vector:</strong><br />
 This translation vector basically tells the view matrix how to undo the camera’s position and orientation so that the world moves around the camera and not the other way around.
 This is derived from a dot product between the orientation vectors and the camera’s position.
@@ -187,56 +321,4 @@ coordinate system</p>
 
 <p><em>All of these mathematical relationships, spatial orientations, and foundational concepts might seem unnecessary but they are crucial. We’ll
 rely on this knowledge to accurately identify the different matrices in memory, decode how the game constructs them, and understand exactly
-how the camera views the world. Without this, reverse engineering the pipeline would just be guesswork.</em></p>]]></content><author><name>z1rp</name></author><summary type="html"><![CDATA[Introduction]]></summary></entry><entry><title type="html">Part 1: Introduction</title><link href="http://localhost:4000/ViewProj-Blog/part-1-intro/" rel="alternate" type="text/html" title="Part 1: Introduction" /><published>2025-07-17T00:00:00+05:30</published><updated>2025-07-17T00:00:00+05:30</updated><id>http://localhost:4000/ViewProj-Blog/part-1-intro</id><content type="html" xml:base="http://localhost:4000/ViewProj-Blog/part-1-intro/"><![CDATA[<p><strong>Prerequisites</strong></p>
-<ul>
-  <li>Understanding the assembly language (x86-64)</li>
-  <li>Basics in Reverse Engineering</li>
-  <li>Intermediary knowledge in C++</li>
-  <li>Windows API Familiarity</li>
-</ul>
-
-<p><strong>What Are we Trying to achieve?</strong></p>
-
-<p>In this blog series, we’re going to reverse engineer how <em>Ghost of Tsushima</em> constructs its <strong>ViewProjection matrix</strong> — the thing that turns 3D world positions into 2D screen coordinates. This is super important for stuff like ESP overlays (you can’t draw a box around an enemy if you don’t know where they are on screen).</p>
-
-<p>We’ll be reverse engineering the game’s rendering pipeline using tools like IDA Pro, breaking down how the ViewProjection matrix is built step by step including all the weird SIMD instructions it uses. The goal is to figure out where it is, how everything fits together, how its constructed and used in the game.</p>
-
-<p><strong>What is an ESP?</strong></p>
-
-<p>ESP stands for <em>Extra-Sensory Perception</em>. In game hacking, it refers to any feature that shows you information you normally wouldn’t be able to see — stuff the game doesn’t intend to show.
-For example, an ESP might let you:</p>
-<ul>
-  <li>See players through walls</li>
-  <li>Know their exact health</li>
-  <li>Track what’s in their inventory</li>
-  <li>Spot hidden loot, traps etc…</li>
-</ul>
-
-<p>This gives a huge unfair advantage over others.</p>
-
-<p><strong>What it should look like:</strong></p>
-
-<h2><img src="/ViewProj-Blog/assets/images/part-1/GotEsp-1.png" alt="ESP-Image1" /></h2>
-<p><img src="/ViewProj-Blog/assets/images/part-1/GotEsp-2.png" alt="ESP-Image2" /></p>
-
-<p>Snippets of what we will be working with:</p>
-
-<p><strong>IDA PRO:</strong>
-<img src="/ViewProj-Blog/assets/images/part-1/ida-view.png" alt="IDA-screenshot" /></p>
-
-<p><strong>Cheat Engine:</strong>
-<img src="/ViewProj-Blog/assets/images/part-1/CheatEngine-view.png" alt="CheatEngine-screenshot" /></p>
-
-<p><strong>Visual Studio:</strong>
-<img src="/ViewProj-Blog/assets/images/part-1/VisualStudio-view.png" alt="VisualStudio-screenshot" /></p>
-
-<p><strong>Reclass:</strong>
-<img src="/ViewProj-Blog/assets/images/part-1/Reclass-view.png" alt="Reclass-screenshot" /></p>
-
-<p>This blog series is just me sharing what I’ve figured out so far while reverse engineering <em>Ghost of Tsushima</em>. There’s always more to understand, and I’m sure some things I say might not be 100% perfect, so if you spot something I missed, or you have better insights, I’d really love to hear from you.</p>
-
-<p>Feel free to reach out to me:</p>
-<ul>
-  <li>Discord: z1rp#1337</li>
-  <li>Email: <a href="mailto:Zer0_1rp@proton.me">Zer0_1rp@proton.me</a></li>
-</ul>]]></content><author><name>z1rp</name></author><summary type="html"><![CDATA[Prerequisites Understanding the assembly language (x86-64) Basics in Reverse Engineering Intermediary knowledge in C++ Windows API Familiarity]]></summary></entry></feed>
+how the camera views the world. Without this, reverse engineering the pipeline would just be guesswork.</em></p>]]></content><author><name>z1rp</name></author><summary type="html"><![CDATA[Introduction]]></summary></entry></feed>

@@ -205,6 +205,8 @@ It defines the camera’s local Z-axis</p>
   <p>Forward Vector = (Camera Position - Camera Look At)</p>
 </blockquote>
 
+<p>These variables (eg: Right.x or forward.y etc) can map from <em>-1</em> to <em>1</em> or <em>0</em> to <em>1</em> depending on the graphics Api used (eg: directx/OpenGL).</p>
+
 <p><strong>Translation Vector:</strong><br />
 This translation vector basically tells the view matrix how to undo the camera’s position and orientation so that the world moves around the camera and not the other way around.
 This is derived from a dot product between the orientation vectors and the camera’s position.
