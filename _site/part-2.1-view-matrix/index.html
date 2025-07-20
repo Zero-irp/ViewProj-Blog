@@ -237,6 +237,23 @@ cross(Up, Right) = Forward<br />
 <p>This returns a new vector perpendicular to the two input vectors. This relationship ensures all three orientation axes form a proper 
 coordinate system</p>
 
+<h3 id="model-matrix"><strong>Model Matrix</strong></h3>
+
+<p>Before we move forward, it’s worth mentioning the Model Matrix<br />
+This Matrix is responsible for transforming a 3D model from its local space into world space handling the model’s position, rotation and scale.</p>
+<blockquote>
+  <p>Model space -&gt; World space</p>
+</blockquote>
+
+<p>For the purpose of world-to-screen projection (basic ESP overlay), we don’t actually need the model matrix.<br />
+<strong>Why?</strong><br />
+The esp we are building only needs to know where something is in world space and the game has already computed and placed the model in world space.
+Since the model matrix just moves the object from local space to world spcae, and we already have the world position, it becomes redundant in this
+context.<br />
+We don’t use this — but it’s worth knowing because the Camera World Matrix we discussed earlier is just a special case of a Model Matrix: it represents the 
+camera’s position and orientation in world space, just like a model matrix does for any object.<br />
+<em>So it has the same layout and structure as the Camera world matrix, the only difference is in what it represents</em></p>
+
 <p><em>All of these mathematical relationships, spatial orientations, and foundational concepts might seem unnecessary but they are crucial. We’ll
 rely on this knowledge to accurately identify the different matrices in memory, decode how the game constructs them, and understand exactly
 how the camera views the world. Without this, reverse engineering the pipeline would just be guesswork.</em></p>

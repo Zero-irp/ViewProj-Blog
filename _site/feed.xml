@@ -1,27 +1,56 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.4.1">Jekyll</generator><link href="http://localhost:4000/ViewProj-Blog/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/ViewProj-Blog/" rel="alternate" type="text/html" /><updated>2025-07-20T04:51:16+05:30</updated><id>http://localhost:4000/ViewProj-Blog/feed.xml</id><title type="html">Reversing The ViewProjection Matrix</title><subtitle>Reverse Engineering the ViewProjection Pipeline in Ghost of Tsushima</subtitle><author><name>z1rp</name></author><entry><title type="html">Part 2.3: View Projection Matrix</title><link href="http://localhost:4000/ViewProj-Blog/part-2.3-View-Projection-matrix/" rel="alternate" type="text/html" title="Part 2.3: View Projection Matrix" /><published>2025-07-17T00:00:00+05:30</published><updated>2025-07-17T00:00:00+05:30</updated><id>http://localhost:4000/ViewProj-Blog/part-2.3-View-Projection-matrix</id><content type="html" xml:base="http://localhost:4000/ViewProj-Blog/part-2.3-View-Projection-matrix/"><![CDATA[<h3 id="what-is-the-view-projection-matrix"><strong>What is the View-Projection Matrix?</strong></h3>
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.4.1">Jekyll</generator><link href="http://localhost:4000/ViewProj-Blog/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/ViewProj-Blog/" rel="alternate" type="text/html" /><updated>2025-07-21T00:07:17+05:30</updated><id>http://localhost:4000/ViewProj-Blog/feed.xml</id><title type="html">Reversing The ViewProjection Matrix</title><subtitle>Reverse Engineering the ViewProjection Pipeline in Ghost of Tsushima</subtitle><author><name>z1rp</name></author><entry><title type="html">Part 3: Finding &amp;amp; Reversing Matrices</title><link href="http://localhost:4000/ViewProj-Blog/part-3-finding-and-reversing-matrices/" rel="alternate" type="text/html" title="Part 3: Finding &amp;amp; Reversing Matrices" /><published>2025-07-17T00:00:00+05:30</published><updated>2025-07-17T00:00:00+05:30</updated><id>http://localhost:4000/ViewProj-Blog/part-3-finding-and-reversing-matrices</id><content type="html" xml:base="http://localhost:4000/ViewProj-Blog/part-3-finding-and-reversing-matrices/"><![CDATA[<h3 id="how-we-search-for-matrices-in-memory">How We Search for Matrices in Memory</h3>
 
-<p>The View-Projection Matrix is simply the result of multiplying the View Matrix and the Projection Matrix together:</p>
+<p>A common appraoch is to switch Cheat Engine’s value type in <em>float</em> and then:</p>
+
+<ol>
+  <li>Look Directly up and scan for the value <em>1.0f</em>.</li>
+  <li>Look Directly Down and scan for the value <em>-1.0f</em>.</li>
+  <li>Rescan to narrow the matrices down to matrices that are actively changing with camera orientation.</li>
+</ol>
+
+<p>Once you narrow it down, you can inspect nearby memory regions and layout patterns (like a 4x4 float matrix) to identify which matrix it is</p>
+
+<p>This technique works because these matrices are often stored in memory in a row-major or column-major 4x4 float array, and the directional 
+vectors (Right, Up, Forward) reflect real-time camera movement</p>
+
 <blockquote>
-  <p>ViewProjection = Projection * View<br />
-Note: Matrix multiplication is not commutative — A * B ≠ B * A</p>
+  <p>Basically Something in the matrix must encode the camera’s up/down rotation</p>
 </blockquote>
 
-<p>This combined matrix allows you to transform a world-space position directly into clip space in one step. Instead of first 
-applying the view matrix, then the projection matrix separately, both transformations are handled at once:</p>
+<h3 id="searching-for-matrices-in-ghost-of-tsushima">Searching for Matrices in Ghost of Tsushima</h3>
 
-<blockquote>
-  <p>clipSpacePos = ViewProjection * worldSpacePos</p>
-</blockquote>
+<p>Lets start searching for interesting matrices in memory in ghost of tsushima!</p>
 
-<p>This is both mathematically valid and computationally efficient, which is why many engines precompute and cache the View-Projection matrix.<br />
-In many game engines the memory this Matrix is stored in is usually in a static memory address due to high reuse for computation thus it makes
-more sense to cache it in known spots.</p>
+<p><strong>Looking up in game</strong>
+<img src="/ViewProj-Blog/assets/images/part-3/look-up-got.png" alt="ESP-Image1" /></p>
 
-<p>Even though it’s just a product of two other matrices, the View-Projection matrix plays a central role in rendering.
-It represents the full transformation from world-space to clip-space and is often the matrix most directly used when deciding what shows up on screen.</p>
+<p><strong>Seraching for 1.0f in cheat engine</strong>
+<img src="/ViewProj-Blog/assets/images/part-3/ce-first-scan.png" alt="ESP-Image1" /></p>
 
-<p><em>This is all we’ll cover about the View-Projection matrix for now. The goal isn’t to dive deep into 3D rendering, but to build a clear, 
-working understanding of how it functions at a basic level.</em></p>]]></content><author><name>z1rp</name></author><summary type="html"><![CDATA[What is the View-Projection Matrix?]]></summary></entry><entry><title type="html">Part 1: Introduction</title><link href="http://localhost:4000/ViewProj-Blog/part-1-intro/" rel="alternate" type="text/html" title="Part 1: Introduction" /><published>2025-07-17T00:00:00+05:30</published><updated>2025-07-17T00:00:00+05:30</updated><id>http://localhost:4000/ViewProj-Blog/part-1-intro</id><content type="html" xml:base="http://localhost:4000/ViewProj-Blog/part-1-intro/"><![CDATA[<h3 id="how-this-rabbit-hole-started"><strong>How This Rabbit Hole Started:</strong></h3>
+<p><strong>Now looking Down</strong>
+<img src="/ViewProj-Blog/assets/images/part-3/look-down-got.png" alt="ESP-Image1" /></p>
+
+<p><strong>Searching for -1.0f in cheat engine</strong>
+<img src="/ViewProj-Blog/assets/images/part-3/ce-second-scan.png" alt="ESP-Image1" /></p>
+
+<p>Now you’re going to get a lot of results. Keep refining your search (e.g., by changing camera angles and scanning again) until the 
+number of results stabilizes and stops changing, that’s usually a good sign you’ve isolated the relevant addresses.</p>
+
+<p>Now When reverse engineering a game, you’ll often find that the View, Projection, and View-Projection matrices live at fixed or static memory addresses.<br />
+<strong>Why?</strong><br />
+Mainly becuase these matrices are core componetns of the game’s rendering pipeline and are global to the camera or render context.</p>
+
+<p>Now we can add all static memory address’s and browse its memory layout’s to see if we find some interesting matrices.</p>
+
+<p><strong>Like Here:</strong>
+<img src="/ViewProj-Blog/assets/images/part-3/cam-world-matrix-and-view-matrix.png" alt="ESP-Image1" /></p>
+
+<p>Here the first 4x4 matrix look like the <em>Camera World Matrix</em> and the second 4x4 matrix looks like the <em>View Matrix</em>.</p>
+
+<h3 id="confirmation-of-the-view-and-camera-world-matrices">Confirmation of the View and Camera World Matrices:</h3>
+
+<p>In <a href="/ViewProj-Blog/part-2.1-view-matrix/">Part 2.1: View Matrix</a> we talked about the orthogonailty and relations of the fundamental Vectors.<br />
+Let’s use those relations to confrim it!</p>]]></content><author><name>z1rp</name></author><summary type="html"><![CDATA[How We Search for Matrices in Memory]]></summary></entry><entry><title type="html">Part 1: Introduction</title><link href="http://localhost:4000/ViewProj-Blog/part-1-intro/" rel="alternate" type="text/html" title="Part 1: Introduction" /><published>2025-07-17T00:00:00+05:30</published><updated>2025-07-17T00:00:00+05:30</updated><id>http://localhost:4000/ViewProj-Blog/part-1-intro</id><content type="html" xml:base="http://localhost:4000/ViewProj-Blog/part-1-intro/"><![CDATA[<h3 id="how-this-rabbit-hole-started"><strong>How This Rabbit Hole Started:</strong></h3>
 
 <p>It all began when I was messing around with Ghost of Tsushima, trying to locate the View-Projection matrix to build a working world-to-screen (W2S) function. I eventually found it and it worked as intended.
 But while digging through memory, I came across several other interesting matrices. Two of them stood out: the Camera World Matrix and the Perspective Projection Matrix. I figured I 
@@ -271,6 +300,23 @@ cross(Up, Right) = Forward<br />
 <p>This returns a new vector perpendicular to the two input vectors. This relationship ensures all three orientation axes form a proper 
 coordinate system</p>
 
+<h3 id="model-matrix"><strong>Model Matrix</strong></h3>
+
+<p>Before we move forward, it’s worth mentioning the Model Matrix<br />
+This Matrix is responsible for transforming a 3D model from its local space into world space handling the model’s position, rotation and scale.</p>
+<blockquote>
+  <p>Model space -&gt; World space</p>
+</blockquote>
+
+<p>For the purpose of world-to-screen projection (basic ESP overlay), we don’t actually need the model matrix.<br />
+<strong>Why?</strong><br />
+The esp we are building only needs to know where something is in world space and the game has already computed and placed the model in world space.
+Since the model matrix just moves the object from local space to world spcae, and we already have the world position, it becomes redundant in this
+context.<br />
+We don’t use this — but it’s worth knowing because the Camera World Matrix we discussed earlier is just a special case of a Model Matrix: it represents the 
+camera’s position and orientation in world space, just like a model matrix does for any object.<br />
+<em>So it has the same layout and structure as the Camera world matrix, the only difference is in what it represents</em></p>
+
 <p><em>All of these mathematical relationships, spatial orientations, and foundational concepts might seem unnecessary but they are crucial. We’ll
 rely on this knowledge to accurately identify the different matrices in memory, decode how the game constructs them, and understand exactly
 how the camera views the world. Without this, reverse engineering the pipeline would just be guesswork.</em></p>]]></content><author><name>z1rp</name></author><summary type="html"><![CDATA[Introduction]]></summary></entry><entry><title type="html">Part 2.2: Projection Matrix</title><link href="http://localhost:4000/ViewProj-Blog/part-2.2-projection-matrix/" rel="alternate" type="text/html" title="Part 2.2: Projection Matrix" /><published>2025-07-17T00:00:00+05:30</published><updated>2025-07-17T00:00:00+05:30</updated><id>http://localhost:4000/ViewProj-Blog/part-2.2-projection-matrix</id><content type="html" xml:base="http://localhost:4000/ViewProj-Blog/part-2.2-projection-matrix/"><![CDATA[<h3 id="what-is-the-projection-matrix"><strong>What is the Projection Matrix?</strong></h3>
@@ -353,4 +399,28 @@ FOV, aspect ratio, near and far planes define the visible 3D frustum.</p>
   <li><strong>yScale:</strong> 1 / tan(Fov_Y/2) or 1 / AspectRatio * tan(Fov_X/2) where Fov_Y = (Aspect Ratio * Fov_X)</li>
 </ul>
 
-<p><em>We’ll later see how this matrix fits into the full pipeline and how the 3D position finally lands on your screen.</em></p>]]></content><author><name>z1rp</name></author><summary type="html"><![CDATA[What is the Projection Matrix?]]></summary></entry></feed>
+<p><em>We’ll later see how this matrix fits into the full pipeline and how the 3D position finally lands on your screen.</em></p>]]></content><author><name>z1rp</name></author><summary type="html"><![CDATA[What is the Projection Matrix?]]></summary></entry><entry><title type="html">Part 2.3: View Projection Matrix</title><link href="http://localhost:4000/ViewProj-Blog/part-2.3-View-Projection-matrix/" rel="alternate" type="text/html" title="Part 2.3: View Projection Matrix" /><published>2025-07-17T00:00:00+05:30</published><updated>2025-07-17T00:00:00+05:30</updated><id>http://localhost:4000/ViewProj-Blog/part-2.3-View-Projection-matrix</id><content type="html" xml:base="http://localhost:4000/ViewProj-Blog/part-2.3-View-Projection-matrix/"><![CDATA[<h3 id="what-is-the-view-projection-matrix"><strong>What is the View-Projection Matrix?</strong></h3>
+
+<p>The View-Projection Matrix (or simply the <em>VP Matrix</em>) is simply the result of multiplying the View Matrix and the Projection Matrix together:</p>
+<blockquote>
+  <p>ViewProjection = Projection * View<br />
+Note: Matrix multiplication is not commutative — A * B ≠ B * A<br />
+The multiplication order depends on the graphics system, influenced by its row/column major layout and handedness.</p>
+</blockquote>
+
+<p>This combined matrix allows you to transform a world-space position directly into clip space in one step. Instead of first 
+applying the view matrix, then the projection matrix separately, both transformations are handled at once:</p>
+
+<blockquote>
+  <p>clipSpacePos = ViewProjection * worldSpacePos</p>
+</blockquote>
+
+<p>This is both mathematically valid and computationally efficient, which is why many engines precompute and cache the View-Projection matrix.<br />
+In many game engines the memory this Matrix is stored in is usually in a static memory address due to high reuse for computation thus it makes
+more sense to cache it in known spots.</p>
+
+<p>Even though it’s just a product of two other matrices, the View-Projection matrix plays a central role in rendering.
+It represents the full transformation from world-space to clip-space and is often the matrix most directly used when deciding what shows up on screen.</p>
+
+<p><em>This is all we’ll cover about the View-Projection matrix for now. The goal isn’t to dive deep into 3D rendering, but to build a clear, 
+working understanding of how it functions at a basic level.</em></p>]]></content><author><name>z1rp</name></author><summary type="html"><![CDATA[What is the View-Projection Matrix?]]></summary></entry></feed>

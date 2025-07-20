@@ -50,10 +50,11 @@
   <div class="post-content e-content" itemprop="articleBody">
     <h3 id="what-is-the-view-projection-matrix"><strong>What is the View-Projection Matrix?</strong></h3>
 
-<p>The View-Projection Matrix is simply the result of multiplying the View Matrix and the Projection Matrix together:</p>
+<p>The View-Projection Matrix (or simply the <em>VP Matrix</em>) is simply the result of multiplying the View Matrix and the Projection Matrix together:</p>
 <blockquote>
   <p>ViewProjection = Projection * View<br />
-Note: Matrix multiplication is not commutative — A * B ≠ B * A</p>
+Note: Matrix multiplication is not commutative — A * B ≠ B * A<br />
+The multiplication order depends on the graphics system, influenced by its row/column major layout and handedness.</p>
 </blockquote>
 
 <p>This combined matrix allows you to transform a world-space position directly into clip space in one step. Instead of first 
