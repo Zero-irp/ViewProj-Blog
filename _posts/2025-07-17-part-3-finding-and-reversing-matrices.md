@@ -5,7 +5,7 @@ date: 2025-07-17 00:00:00 +0530
 permalink: /part-3-finding-and-reversing-matrices/
 ---
 
-### How We Search for Matrices in Memory
+### **How We Search for Matrices in Memory**
 
 A common appraoch is to switch Cheat Engine's value type in *float* and then:
 
@@ -20,7 +20,7 @@ vectors (Right, Up, Forward) reflect real-time camera movement
 
 >Basically Something in the matrix must encode the camera's up/down rotation
 
-### Searching for Matrices in Ghost of Tsushima
+### **Searching for Matrices in Ghost of Tsushima**
 
 Lets start searching for interesting matrices in memory in ghost of tsushima!
 
@@ -50,7 +50,7 @@ Now we can add all static memory address's and browse its memory layout's to see
 
 Here the first 4x4 matrix look like the *Camera World Matrix* and the second 4x4 matrix looks like the *View Matrix*.
 
-### Confirmation of the View and Camera World Matrices:
+### **Confirmation of the View and Camera World Matrices:**
 
 In [Part 2.1: View Matrix](/ViewProj-Blog/part-2.1-view-matrix/) we talked about the orthogonailty and relations of the fundamental Vectors.  
 Let's use those relations to confrim it!
