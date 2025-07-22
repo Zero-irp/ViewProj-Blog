@@ -100,7 +100,83 @@ Mainly becuase these matrices are core componetns of the game’s rendering pipe
 <h3 id="confirmation-of-the-view-and-camera-world-matrices"><strong>Confirmation of the View and Camera World Matrices:</strong></h3>
 
 <p>In <a href="/ViewProj-Blog/part-2.1-view-matrix/">Part 2.1: View Matrix</a> we talked about the orthogonailty and relations of the fundamental Vectors.<br />
-Let’s use those relations to confrim it!</p>
+Let’s open these matrices in reclass and use these relations to confirm it!</p>
+
+<p>Lets form an Hypothesis that this is the layout of the 4x4 Matrix:
+<img src="/ViewProj-Blog/assets/images/part-3/reclass-view-cam-hypothesis.png" alt="ESP-Image1" /></p>
+
+<p>Using its relations we can see:</p>
+<ul>
+  <li>Dot((-0.104, -0.06, 0.993), (0.5, -0.866, 0.00)) = <em>-3.9999999999998E-5</em> which is basically just <em>0</em> and is just floating-point precision error.</li>
+  <li>Cross((-0.104, -0.06, 0.993), (0.5, -0.866, 0.00)) = <em>(0.860, 0.496, 0.121)</em> which basically gave us the second row (starting row’s from 0)</li>
+</ul>
+
+<blockquote>
+  <p>This is useful because, in reverse engineering, you may not always find a clean and complete 4×4 matrix. Sometimes you only find a few 
+direction vectors (like Right and Up) scattered across memory or passed into functions. But thanks to vector math, you can reconstruct the missing third 
+vector using cross products, or verify their relationship using dot products (which should be zero for perpendicular vectors). These help validate our findings
+(maybe layout is unconventional or partially obfuscated)</p>
+</blockquote>
+
+<p>In very rare circumstances, even though it might look like a matrix in might be a random cluster of floats that dont inherently mean anything,
+Once we see that the values are orthogonal, have unit lengths, and contain a clear translation component (usually the larger values &gt; 1.0f), 
+we can reasonably assume we’re dealing with a real transformation matrix.</p>
+
+<blockquote>
+  <p>To be extra sure, you can move the camera left, right, up, and down, and observe how the matrix reacts and see how these vectors react and accuratly 
+verify them.</p>
+</blockquote>
+
+<p><strong>Lets now inverse it to get the view matrix:</strong>
+<img src="/ViewProj-Blog/assets/images/part-3/cam-world-inverse.png" alt="ESP-Image1" /></p>
+
+<p>We can see it exactly matches the second 4x4 matrix we see in memory (Camera World Matrix (Inverse) = View Matrix).</p>
+
+<blockquote>
+  <p>We can also take dot(Right, Pos) and compare it against the translation component of the second matrix as another way to confirm this relationship.</p>
+</blockquote>
+
+<p>Thus pretty much confirming the first matrix to be <em>Camera World Matrix</em> and the second matrix to be the <em>View Matrix</em>.</p>
+
+<h3 id="looking-at-other-matrices"><strong>Looking at other matrices</strong></h3>
+
+<p>Here we see some other matrices:
+<img src="/ViewProj-Blog/assets/images/part-3/reclass-view-projection-matrix.png" alt="ESP-Image1" /></p>
+
+<p>The first Matrix looks like a projection matrix and the second one looks like a multiplication of the projection matrix with the view 
+matrix (VP Matrix), the third one looks like the View-projection matrix without large translational values.</p>
+
+<p><strong>Why?</strong><br />
+Because they fit the general layout’s expected of these matrices.<br />
+To be sure lets plug in the view projection matrix into a world to screen function to see if we can confirm this.</p>
+
+<p>To verify i will manually input the entity coordinates into my world to screen program.<br />
+Here is the entity whose position we’ll convert:<br />
+<img src="/ViewProj-Blog/assets/images/part-3/view-proj-test-in-game.png" alt="ESP-Image1" /></p>
+
+<p>Since this image shows that the entity is at the top-left corner of our screen at a resolution of 1920x1080 we can expect the screen coordinates to
+be close to (0, 0) since the Top-left corner is the origin of the screen (0, 0), not bottom left as you might expect (unlike OpenGl).<br />
+<img src="/ViewProj-Blog/assets/images/part-3/view-proj-screen-pos-results.png" alt="ESP-Image1" /></p>
+
+<p>Here we can see the output screen coordinates matches closely to what we expected.</p>
+
+<blockquote>
+  <p>We’ll cover how to get the entity’s 3D coordinates and how World-to-Screen works in detail later, for now, this confirms the matrix is correct.</p>
+</blockquote>
+
+<h2 id="trying-to-rebuild-the-view-projection-matrix"><strong>Trying to Rebuild the View-Projection Matrix</strong></h2>
+
+<p>Now that we have confrimed that this is infact the view projection matrix lets try to reconstruct it manually</p>
+
+<ol>
+  <li>Take the suspected Projection Matrix</li>
+  <li>Multiply it by the inverse of the Camera World Matrix</li>
+</ol>
+
+<p><img src="/ViewProj-Blog/assets/images/part-3/discrepency-vp-with-vp-multiply.png" alt="ESP-Image1" /><br />
+Here for some reason it doesn’t quite match’s up although quite similar.</p>
+
+<p><em>Next Step: Time to start tracing back the functions that write to the final View-Projection Matrix in memory.</em></p>
 
 
   </div><a class="u-url" href="/ViewProj-Blog/part-3-finding-and-reversing-matrices/" hidden></a>

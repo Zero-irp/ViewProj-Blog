@@ -150,7 +150,7 @@ as if the camera is sitting at the origin (0, 0, 0) and looking straight down it
 </table>
 
 <blockquote>
-  <p>This layout isn’t a hard rule — it can change depending on things like whether the engine uses a right-handed or left handed coordinate system, whether it stores matrices in row-major or column-major order, or even custom layouts used for optimization. What matters is consistency: as long as the engine expects that specific layout, it will work. But no matter how it’s arranged, the matrix still needs the same essential components — Right, Up, Forward, and Translation.</p>
+  <p>This layout isn’t a hard rule, it can change depending on things like whether the engine uses a right-handed or left handed coordinate system, whether it stores matrices in row-major or column-major order, or even custom layouts used for optimization. What matters is consistency: as long as the engine expects that specific layout, it will work. But no matter how it’s arranged, the matrix still needs the same essential components: Right, Up, Forward, and Translation.</p>
 </blockquote>
 
 <p>This 4x4 Matrix layout is common in DirectX Games where it is usually row-major and left-handed.<br />
@@ -212,7 +212,7 @@ This translation vector basically tells the view matrix how to undo the camera�
 This is derived from a dot product between the orientation vectors and the camera’s position.
 In the view matrix, this position is negated to move the world around the camera.</p>
 
-<h3 id="orthogonality-and-relations"><strong>Orthogonality and Relations</strong></h3>
+<h3 id="orthogonality-and-relations--optionalgood-to-know"><strong>Orthogonality and Relations:- (Optional/Good to know)</strong></h3>
 
 <p>For a camera to behave properly in 3D space, its orientation vectors (Right, Up, Forward) must be orthogonal (Perpendicular) to each other. <br />
 In Vector Algebra we know 2 perpendicular vector’s dot product is always 0.</p>
@@ -237,10 +237,12 @@ cross(Up, Right) = Forward<br />
 <p>This returns a new vector perpendicular to the two input vectors. This relationship ensures all three orientation axes form a proper 
 coordinate system</p>
 
-<h3 id="model-matrix"><strong>Model Matrix</strong></h3>
+<h3 id="model-matrix--optionalgood-to-know"><strong>Model Matrix:- (Optional/Good to know)</strong></h3>
 
 <p>Before we move forward, it’s worth mentioning the Model Matrix<br />
+The Model Matrix is defined by a set of vertices. The X,Y,Z coordinates of these vertices are defined relative to the object’s center,
 This Matrix is responsible for transforming a 3D model from its local space into world space handling the model’s position, rotation and scale.</p>
+
 <blockquote>
   <p>Model space -&gt; World space</p>
 </blockquote>
@@ -250,9 +252,12 @@ This Matrix is responsible for transforming a 3D model from its local space into
 The esp we are building only needs to know where something is in world space and the game has already computed and placed the model in world space.
 Since the model matrix just moves the object from local space to world spcae, and we already have the world position, it becomes redundant in this
 context.<br />
-We don’t use this — but it’s worth knowing because the Camera World Matrix we discussed earlier is just a special case of a Model Matrix: it represents the 
+We don’t use this, but it’s worth knowing because the Camera World Matrix we discussed earlier is just a special case of a Model Matrix: it represents the 
 camera’s position and orientation in world space, just like a model matrix does for any object.<br />
 <em>So it has the same layout and structure as the Camera world matrix, the only difference is in what it represents</em></p>
+
+<p><strong>If you want to learn more about mode, view and projection matrices you can check this Opengl tutorial out:</strong><br />
+<a href="https://www.opengl-tutorial.org/beginners-tutorials/tutorial-3-matrices/#the-model-view-and-projection-matrices">OpenGL tutorial</a></p>
 
 <p><em>All of these mathematical relationships, spatial orientations, and foundational concepts might seem unnecessary but they are crucial. We’ll
 rely on this knowledge to accurately identify the different matrices in memory, decode how the game constructs them, and understand exactly
