@@ -89,6 +89,96 @@ Alternatively, you can calculate the offset between the Cheat Engine base and th
 Instead, it appears that the function is primarily copying matrices from dynamic memory into this static location,  possibly from a 
 camera struct or a similar source.</p>
 
+<p>Let’s now see what function writes to the dynamic address that its copying from ([rax+0x240]).
+<img src="/ViewProj-Blog/assets/images/part-4.1/matrix-copy-ins-write.png" alt="ESP-Image1" /></p>
+
+<p>We can see one instruction reference “GhostOfTsushima.exe+7FC11B:”. Let’s select the current function and plug it into ida to see its pseudo code.</p>
+
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">char</span> <span class="kr">__fastcall</span> <span class="nf">sub_7FBF10</span><span class="p">(</span><span class="n">__int64</span> <span class="n">a1</span><span class="p">,</span> <span class="n">__m128</span> <span class="o">*</span><span class="n">a2</span><span class="p">,</span> <span class="n">__m128</span> <span class="o">*</span><span class="n">a3</span><span class="p">)</span>
+<span class="p">{</span>
+
+  <span class="o">*</span><span class="p">(</span><span class="n">__m128</span> <span class="o">*</span><span class="p">)(</span><span class="n">a1</span> <span class="o">+</span> <span class="mh">0x550</span><span class="p">)</span> <span class="o">=</span> <span class="o">*</span><span class="n">a2</span><span class="p">;</span>
+  <span class="o">*</span><span class="p">(</span><span class="n">__m128</span> <span class="o">*</span><span class="p">)(</span><span class="n">a1</span> <span class="o">+</span> <span class="mh">0x430</span><span class="p">)</span> <span class="o">=</span> <span class="o">*</span><span class="n">a3</span><span class="p">;</span>
+  <span class="o">*</span><span class="p">(</span><span class="n">__m128</span> <span class="o">*</span><span class="p">)(</span><span class="n">a1</span> <span class="o">+</span> <span class="mh">0x440</span><span class="p">)</span> <span class="o">=</span> <span class="n">a3</span><span class="p">[</span><span class="mi">1</span><span class="p">];</span>
+  <span class="o">*</span><span class="p">(</span><span class="n">__m128</span> <span class="o">*</span><span class="p">)(</span><span class="n">a1</span> <span class="o">+</span> <span class="mh">0x450</span><span class="p">)</span> <span class="o">=</span> <span class="n">a3</span><span class="p">[</span><span class="mi">2</span><span class="p">];</span>
+  <span class="o">*</span><span class="p">(</span><span class="n">__m128</span> <span class="o">*</span><span class="p">)(</span><span class="n">a1</span> <span class="o">+</span> <span class="mh">0x460</span><span class="p">)</span> <span class="o">=</span> <span class="n">a3</span><span class="p">[</span><span class="mi">3</span><span class="p">];</span>
+  <span class="n">sub_938210</span><span class="p">(</span><span class="n">a3</span><span class="p">,</span> <span class="n">a1</span> <span class="o">+</span> <span class="mh">0x4B0</span><span class="p">);</span>
+  <span class="n">result</span> <span class="o">=</span> <span class="n">_mm_movemask_ps</span><span class="p">(</span><span class="n">_mm_cmplt_ps</span><span class="p">(</span><span class="o">*</span><span class="p">(</span><span class="n">__m128</span> <span class="o">*</span><span class="p">)</span><span class="n">sub_7CD6F0</span><span class="p">(</span><span class="o">&amp;</span><span class="n">v21</span><span class="p">,</span> <span class="n">a1</span> <span class="o">+</span> <span class="mh">0x430</span><span class="p">),</span> <span class="p">(</span><span class="n">__m128</span><span class="p">)</span><span class="mi">0LL</span><span class="p">))</span> <span class="o">==</span> <span class="mi">15</span><span class="p">;</span>
+  <span class="o">*</span><span class="p">(</span><span class="n">_BYTE</span> <span class="o">*</span><span class="p">)(</span><span class="n">a1</span> <span class="o">+</span> <span class="mh">0x770</span><span class="p">)</span> <span class="o">=</span> <span class="n">result</span><span class="p">;</span>
+  <span class="n">v7</span> <span class="o">=</span> <span class="n">a3</span><span class="p">[</span><span class="mi">1</span><span class="p">];</span>
+  <span class="n">v8</span> <span class="o">=</span> <span class="o">*</span><span class="n">a3</span><span class="p">;</span>
+  <span class="n">v9</span> <span class="o">=</span> <span class="n">_mm_sub_ps</span><span class="p">((</span><span class="n">__m128</span><span class="p">)</span><span class="mi">0LL</span><span class="p">,</span> <span class="n">_mm_and_ps</span><span class="p">((</span><span class="n">__m128</span><span class="p">)</span><span class="n">xmmword_1138D50</span><span class="p">,</span> <span class="o">*</span><span class="n">a2</span><span class="p">));</span>
+  <span class="n">v10</span> <span class="o">=</span> <span class="n">a3</span><span class="p">[</span><span class="mi">2</span><span class="p">];</span>
+  <span class="n">v11</span> <span class="o">=</span> <span class="n">a3</span><span class="p">[</span><span class="mi">3</span><span class="p">];</span>
+  <span class="n">v12</span> <span class="o">=</span> <span class="n">_mm_and_ps</span><span class="p">((</span><span class="n">__m128</span><span class="p">)</span><span class="n">xmmword_1138D00</span><span class="p">,</span> <span class="p">(</span><span class="n">__m128</span><span class="p">)</span><span class="n">xmmword_1138D50</span><span class="p">);</span>
+  <span class="n">v13</span> <span class="o">=</span> <span class="n">_mm_and_ps</span><span class="p">((</span><span class="n">__m128</span><span class="p">)</span><span class="n">xmmword_1138CF0</span><span class="p">,</span> <span class="p">(</span><span class="n">__m128</span><span class="p">)</span><span class="n">xmmword_1138D50</span><span class="p">);</span>
+  <span class="n">v14</span> <span class="o">=</span> <span class="n">_mm_shuffle_ps</span><span class="p">(</span><span class="n">v9</span><span class="p">,</span> <span class="n">_mm_shuffle_ps</span><span class="p">((</span><span class="n">__m128</span><span class="p">)</span><span class="n">xmmword_10F0E70</span><span class="p">,</span> <span class="n">v9</span><span class="p">,</span> <span class="mi">160</span><span class="p">),</span> <span class="mi">36</span><span class="p">);</span>
+  <span class="n">v15</span> <span class="o">=</span> <span class="n">_mm_and_ps</span><span class="p">((</span><span class="n">__m128</span><span class="p">)</span><span class="n">xmmword_1138CE0</span><span class="p">,</span> <span class="p">(</span><span class="n">__m128</span><span class="p">)</span><span class="n">xmmword_1138D50</span><span class="p">);</span>
+  <span class="n">v16</span> <span class="o">=</span> <span class="n">_mm_shuffle_ps</span><span class="p">(</span><span class="n">v14</span><span class="p">,</span> <span class="n">_mm_shuffle_ps</span><span class="p">((</span><span class="n">__m128</span><span class="p">)</span><span class="n">xmmword_10F0E70</span><span class="p">,</span> <span class="n">v14</span><span class="p">,</span> <span class="mi">160</span><span class="p">),</span> <span class="mi">36</span><span class="p">);</span>
+  <span class="n">v17</span> <span class="o">=</span> <span class="n">_mm_add_ps</span><span class="p">(</span>
+          <span class="n">_mm_add_ps</span><span class="p">(</span>
+            <span class="n">_mm_add_ps</span><span class="p">(</span><span class="n">_mm_mul_ps</span><span class="p">(</span><span class="n">_mm_shuffle_ps</span><span class="p">(</span><span class="n">v16</span><span class="p">,</span> <span class="n">v16</span><span class="p">,</span> <span class="mi">85</span><span class="p">),</span> <span class="n">v7</span><span class="p">),</span> <span class="n">_mm_mul_ps</span><span class="p">(</span><span class="n">_mm_shuffle_ps</span><span class="p">(</span><span class="n">v16</span><span class="p">,</span> <span class="n">v16</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="o">*</span><span class="n">a3</span><span class="p">)),</span>
+            <span class="n">_mm_mul_ps</span><span class="p">(</span><span class="n">_mm_shuffle_ps</span><span class="p">(</span><span class="n">v16</span><span class="p">,</span> <span class="n">v16</span><span class="p">,</span> <span class="mi">170</span><span class="p">),</span> <span class="n">v10</span><span class="p">)),</span>
+          <span class="n">_mm_mul_ps</span><span class="p">(</span><span class="n">_mm_shuffle_ps</span><span class="p">(</span><span class="n">v16</span><span class="p">,</span> <span class="n">v16</span><span class="p">,</span> <span class="mi">255</span><span class="p">),</span> <span class="n">v11</span><span class="p">));</span>
+  <span class="n">v18</span> <span class="o">=</span> <span class="n">_mm_add_ps</span><span class="p">(</span><span class="n">_mm_mul_ps</span><span class="p">(</span><span class="n">_mm_shuffle_ps</span><span class="p">(</span><span class="n">v13</span><span class="p">,</span> <span class="n">v13</span><span class="p">,</span> <span class="mi">85</span><span class="p">),</span> <span class="n">v7</span><span class="p">),</span> <span class="n">_mm_mul_ps</span><span class="p">(</span><span class="n">_mm_shuffle_ps</span><span class="p">(</span><span class="n">v13</span><span class="p">,</span> <span class="n">v13</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="o">*</span><span class="n">a3</span><span class="p">));</span>
+  <span class="o">*</span><span class="p">(</span><span class="n">__m128</span> <span class="o">*</span><span class="p">)(</span><span class="n">a1</span> <span class="o">+</span> <span class="mh">0x260</span><span class="p">)</span> <span class="o">=</span> <span class="n">_mm_add_ps</span><span class="p">(</span>
+                              <span class="n">_mm_add_ps</span><span class="p">(</span>
+                                <span class="n">_mm_add_ps</span><span class="p">(</span>
+                                  <span class="n">_mm_mul_ps</span><span class="p">(</span><span class="n">_mm_shuffle_ps</span><span class="p">(</span><span class="n">v12</span><span class="p">,</span> <span class="n">v12</span><span class="p">,</span> <span class="mi">85</span><span class="p">),</span> <span class="n">v7</span><span class="p">),</span>
+                                  <span class="n">_mm_mul_ps</span><span class="p">(</span><span class="n">_mm_shuffle_ps</span><span class="p">(</span><span class="n">v12</span><span class="p">,</span> <span class="n">v12</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="o">*</span><span class="n">a3</span><span class="p">)),</span>
+                                <span class="n">_mm_mul_ps</span><span class="p">(</span><span class="n">_mm_shuffle_ps</span><span class="p">(</span><span class="n">v12</span><span class="p">,</span> <span class="n">v12</span><span class="p">,</span> <span class="mi">170</span><span class="p">),</span> <span class="n">v10</span><span class="p">)),</span>
+                              <span class="n">_mm_mul_ps</span><span class="p">(</span><span class="n">_mm_shuffle_ps</span><span class="p">(</span><span class="n">v12</span><span class="p">,</span> <span class="n">v12</span><span class="p">,</span> <span class="mi">255</span><span class="p">),</span> <span class="n">v11</span><span class="p">));</span>
+  <span class="o">*</span><span class="p">(</span><span class="n">__m128</span> <span class="o">*</span><span class="p">)(</span><span class="n">a1</span> <span class="o">+</span> <span class="mh">0x270</span><span class="p">)</span> <span class="o">=</span> <span class="n">v17</span><span class="p">;</span>
+  <span class="o">*</span><span class="p">(</span><span class="n">__m128</span> <span class="o">*</span><span class="p">)(</span><span class="n">a1</span> <span class="o">+</span> <span class="mh">0x250</span><span class="p">)</span> <span class="o">=</span> <span class="n">_mm_add_ps</span><span class="p">(</span> <span class="p">..............</span>
+</code></pre></div></div>
+
+<blockquote>
+  <p>This is just a snippet of the start of the function.</p>
+</blockquote>
+
+<p>In Windows x64, function parameters are passed using the Microsoft x64 calling convention, where the first four arguments are 
+passed via registers in the following order:</p>
+
+<ul>
+  <li>RCX → first argument (a1)</li>
+  <li>RDX → second argument (a2)</li>
+  <li>R8 → third argument (a3)</li>
+  <li>R9 → fourth argument (a4)</li>
+</ul>
+
+<p>Any additional arguments beyond the fourth are passed on the stack. The return value is typically stored in RAX.<br />
+With this in mind, we can infer that a1, a2, and a3 in the function correspond to the values of RCX, RDX, and R8 
+respectively at the time of the call.<br />
+We’ll set a breakpoint at the start of the function in Cheat Engine to further analyze which will  allow us to inspect the 
+contents of these registers when the function is called.<br />
+<img src="/ViewProj-Blog/assets/images/part-4.1/ce-7fbf10-breakpoint.png" alt="ESP-Image1" /></p>
+
+<p>For now, the only argument of interest is a1, which corresponds to RCX. In this particular call, RCX = 0x2D72494D200.<br />
+I consider it “interesting” because of the following code snippet:</p>
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code>  <span class="o">*</span><span class="p">(</span><span class="n">__m128</span> <span class="o">*</span><span class="p">)(</span><span class="n">a1</span> <span class="o">+</span> <span class="mh">0x550</span><span class="p">)</span> <span class="o">=</span> <span class="o">*</span><span class="n">a2</span><span class="p">;</span>
+  <span class="o">*</span><span class="p">(</span><span class="n">__m128</span> <span class="o">*</span><span class="p">)(</span><span class="n">a1</span> <span class="o">+</span> <span class="mh">0x430</span><span class="p">)</span> <span class="o">=</span> <span class="o">*</span><span class="n">a3</span><span class="p">;</span>
+  <span class="o">*</span><span class="p">(</span><span class="n">__m128</span> <span class="o">*</span><span class="p">)(</span><span class="n">a1</span> <span class="o">+</span> <span class="mh">0x440</span><span class="p">)</span> <span class="o">=</span> <span class="n">a3</span><span class="p">[</span><span class="mi">1</span><span class="p">];</span>
+  <span class="o">*</span><span class="p">(</span><span class="n">__m128</span> <span class="o">*</span><span class="p">)(</span><span class="n">a1</span> <span class="o">+</span> <span class="mh">0x450</span><span class="p">)</span> <span class="o">=</span> <span class="n">a3</span><span class="p">[</span><span class="mi">2</span><span class="p">];</span>
+  <span class="o">*</span><span class="p">(</span><span class="n">__m128</span> <span class="o">*</span><span class="p">)(</span><span class="n">a1</span> <span class="o">+</span> <span class="mh">0x460</span><span class="p">)</span> <span class="o">=</span> <span class="n">a3</span><span class="p">[</span><span class="mi">3</span><span class="p">];</span>
+</code></pre></div></div>
+
+<p>looking through the function we notice that it loads a single 4x4 matrix and a Vector4 near the start.<br />
+Let’s inspect the values at those offsets in memory.<br />
+At [a1 + 0x430], we find what appears to be a ViewProjection matrix without the translation component:<br />
+<img src="/ViewProj-Blog/assets/images/part-4.1/reclass-view-proj-no-trans.png" alt="ESP-Image1" />
+And at [a1 + 0x550], we find a Vector4 that corresponds to the camera position: <br />
+<img src="/ViewProj-Blog/assets/images/part-4.1/reclass-cam-pos.png" alt="ESP-Image1" /></p>
+
+<p>Since this function receives the view-projection matrix (without translation) as input, we can reasonably infer that the actual 
+multiplication of the View and Projection matrices occurs earlier in the call stack. That means we’ll need to trace back 
+further to locate the point where the View and Projection matrices are composed into this intermediate result.<br />
+This function appears to take an intermediate view-projection matrix. One without translation and adds the translational components 
+to produce the final view-projection matrix used in rendering.</p>
+<blockquote>
+  <p>We’ll break down this function in detail later, but for now, our goal is to trace the data flow further upstream to locate where 
+this matrix begins its construction.</p>
+</blockquote>
+
 
   </div><a class="u-url" href="/ViewProj-Blog/part-4.1-tracing-matrix-construction/" hidden></a>
 </article>

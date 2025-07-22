@@ -6,6 +6,9 @@ theme: minima
 plugins:
   - jekyll-feed
 
+markdown: kramdown
+highlighter: rouge
+
 author: z1rp
 email: Zer0_1rp@proton.me
 show_excerpts: true
