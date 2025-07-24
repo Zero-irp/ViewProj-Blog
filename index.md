@@ -3,7 +3,7 @@ layout: default
 title: "Index"
 ---
 
-# Reversing The View-Projection Matrix Blog
+# Reversing The Construction Of The View-Projection Matrix Blog
 
 Welcome to my blog series on reverse engineering the matrix pipeline of a AAA game.
 
