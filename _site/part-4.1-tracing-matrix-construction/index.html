@@ -180,13 +180,13 @@ to produce the final view-projection matrix used in rendering.</p>
 this matrix begins its construction.</p>
 </blockquote>
 
-<p>Let’s breakpoint at the start of the function and use the “stack trace” function in cheat engine.<br />
+<p>Let’s breakpoint at the start of the function and use the “stack trace” feature in cheat engine.<br />
 <img src="/ViewProj-Blog/assets/images/part-4.1/ce-stack-trace-realfunc.png" alt="ESP-Image1" /></p>
 
 <p>The first function is the function we are inside of.<br />
 The instruction at GhostOfTsushima.exe+7FD233 is part of the function that called our current function at 7FBF10</p>
 
-<p>Let’s take the start address of the caller function and plug it inside of IDA for further analysis.</p>
+<p>We’ll grab the start address of the caller and plug it inside of IDA for further analysis.</p>
 
 <div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">char</span> <span class="kr">__fastcall</span> <span class="nf">sub_7FD060</span><span class="p">(</span><span class="n">__int64</span> <span class="n">a1</span><span class="p">)</span>
 <span class="p">{</span>
@@ -249,8 +249,8 @@ The instruction at GhostOfTsushima.exe+7FD233 is part of the function that calle
 <span class="p">}</span>
 </code></pre></div></div>
 
-<p>In the function sub_7FD060 we can see it takes in just one argument which is probably the camera struct and notably it loads two matrices 
-[a1+0x200] and [a1+0x140] which are both 4x4 matrices.</p>
+<p>This function takes a single argument, probably a pointer to the camera structure.<br />
+Notably, it accesses two 4x4 matrices</p>
 
 <p>[a1+0x200]:<br />
 <img src="/ViewProj-Blog/assets/images/part-4.1/a1+200-matrix.png" alt="ESP-Image1" /><br />
@@ -260,8 +260,8 @@ This is just the Projection Matrix.</p>
 <img src="/ViewProj-Blog/assets/images/part-4.1/a1+140-matrix.png" alt="ESP-Image1" /><br />
 This is just the Camera World Matrix.</p>
 
-<p>We also see many _mm_mul_ps, _mm_add_ps, _mm_shuffle_ps in this function which is a indicator for matrix multiplication and 
-seems to construct a matrix in the varible v16 which is an m128 data type with array size of 3 which means its a 4x4 matrix.</p>
+<p>Throughout the function, we see extensive use of _mm_mul_ps, _mm_add_ps, and _mm_shuffle_ps which is a indicator for SIMD matrix multiplication. 
+The v16 array, which is made up of __m128 values, is gradually filled with the result of these operations, effectively forming a 4x4 matrix.</p>
 
 <p><em>Now that we have confirmed that this is probably the matrix construction function of the View-Projection matrix we can now start reversing 
 its many SIMD instructions to see what exactly it does with the camera world matrix and projection matrix.</em></p>
