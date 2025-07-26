@@ -66,9 +66,9 @@ The bitmask used in the instruction:</p>
 </code></pre></div></div>
 <p>relies on a clever use of NaN values as a bitmask.<br />
 xmmword_1138D50 is a static memory address that holds four 32-bit floats:<br />
-(Nan, Nan, Nan, 0.f)</p>
+(NaN, NaN, NaN, 0.0f)</p>
 
-<p>Here <strong>specfically</strong> ‘Nan’ refer to a 32 bit value where all bits are filped to 1.<br />
+<p>Here <strong>specfically</strong> ‘NaN’ refer to a 32 bit value where all bits are filped to 1.<br />
 <img src="/ViewProj-Blog/assets/images/part-4.2/ieee-float-binary.png" alt="ESP-Image1" /></p>
 <blockquote>
   <p>NaN doesn’t literally mean “all bits 1” (0xFFFFFFFF), that’s one specific payload of NaN</p>
@@ -82,7 +82,7 @@ xmmword_1138D50 is a static memory address that holds four 32-bit floats:<br />
   <li>Resulting value is NaN, but its binary pattern is ‘11111111111111111111111111111111’</li>
 </ul>
 
-<p>So, when _mm_and_ps() uses (Nan, Nan, Nan, 0.f):</p>
+<p>So, when _mm_and_ps() uses (NaN, NaN, NaN, 0.0f):</p>
 
 <ul>
   <li>NaN &amp; X,Y,Z = X,Y,Z (because all bits are 1 → preserves input)</li>
