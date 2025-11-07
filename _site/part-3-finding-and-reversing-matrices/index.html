@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Part 3: Finding &amp; Reversing Matrices | Reversing The ViewProjection Matrix</title>
+<meta name="generator" content="Jekyll v4.4.1" />
+<meta property="og:title" content="Part 3: Finding &amp; Reversing Matrices" />
+<meta name="author" content="z1rp" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="How We Search for Matrices in Memory" />
+<meta property="og:description" content="How We Search for Matrices in Memory" />
+<link rel="canonical" href="http://localhost:4000/ViewProj-Blog/part-3-finding-and-reversing-matrices/" />
+<meta property="og:url" content="http://localhost:4000/ViewProj-Blog/part-3-finding-and-reversing-matrices/" />
+<meta property="og:site_name" content="Reversing The ViewProjection Matrix" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2025-07-17T00:00:00+05:30" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Part 3: Finding &amp; Reversing Matrices" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"z1rp"},"dateModified":"2025-07-17T00:00:00+05:30","datePublished":"2025-07-17T00:00:00+05:30","description":"How We Search for Matrices in Memory","headline":"Part 3: Finding &amp; Reversing Matrices","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/ViewProj-Blog/part-3-finding-and-reversing-matrices/"},"url":"http://localhost:4000/ViewProj-Blog/part-3-finding-and-reversing-matrices/"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/ViewProj-Blog/assets/css/style.css">
+  <link rel="stylesheet" href="/ViewProj-Blog/assets/css/syntax.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/ViewProj-Blog/feed.xml" title="Reversing The ViewProjection Matrix" /></head>
+<!-- ✅ MathJax setup -->
+  <script>
+    MathJax = {
+      tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <!-- ✅ End MathJax setup -->
+
+  <body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/ViewProj-Blog/">Reversing The ViewProjection Matrix</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/ViewProj-Blog/">Index</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Part 3: Finding &amp; Reversing Matrices</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2025-07-17T00:00:00+05:30" itemprop="datePublished">Jul 17, 2025
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <h3 id="how-we-search-for-matrices-in-memory"><strong>How We Search for Matrices in Memory</strong></h3>
+
+<p>A common approach is to switch Cheat Engine’s value type in <em>float</em> and then:</p>
+
+<ol>
+  <li>Look Directly up and scan for the value <em>1.0f</em>.</li>
+  <li>Look Directly Down and scan for the value <em>-1.0f</em>.</li>
+  <li>Rescan to narrow the matrices down to matrices that are actively changing with camera orientation.</li>
+</ol>
+
+<p>Once you narrow it down, you can inspect nearby memory regions and layout patterns (like a 4x4 float matrix) to identify which matrix it is</p>
+
+<p>This technique works because these matrices are often stored in memory in a row-major or column-major 4x4 float array, and the directional 
+vectors (Right, Up, Forward) reflect real-time camera movement</p>
+
+<blockquote>
+  <p>Basically Something in the matrix must encode the camera’s up/down rotation</p>
+</blockquote>
+
+<h3 id="searching-for-matrices-in-ghost-of-tsushima"><strong>Searching for Matrices in Ghost of Tsushima</strong></h3>
+
+<p>Lets start searching for interesting matrices in memory in ghost of tsushima!</p>
+
+<p><strong>Looking up in game</strong>
+<img src="/ViewProj-Blog/assets/images/part-3/look-up-got.png" alt="ESP-Image1" /></p>
+
+<p><strong>Seraching for 1.0f in cheat engine</strong>
+<img src="/ViewProj-Blog/assets/images/part-3/ce-first-scan.png" alt="ESP-Image1" /></p>
+
+<p><strong>Now looking Down</strong>
+<img src="/ViewProj-Blog/assets/images/part-3/look-down-got.png" alt="ESP-Image1" /></p>
+
+<p><strong>Searching for -1.0f in cheat engine</strong>
+<img src="/ViewProj-Blog/assets/images/part-3/ce-second-scan.png" alt="ESP-Image1" /></p>
+
+<p>Now you’re going to get a lot of results. Keep refining your search (e.g., by changing camera angles and scanning again) until the 
+number of results stabilizes and stops changing, that’s usually a good sign you’ve isolated the relevant addresses.</p>
+
+<p>Now When reverse engineering a game, you’ll often find that the View, Projection, and View-Projection matrices live at fixed or static memory addresses.<br />
+<strong>Why?</strong><br />
+Mainly because these matrices are core components of the game’s rendering pipeline and are global to the camera or render context.</p>
+
+<p>Now we can add all static memory address’s and browse its memory layout’s to see if we find some interesting matrices.</p>
+
+<p><strong>Like Here:</strong>
+<img src="/ViewProj-Blog/assets/images/part-3/cam-world-matrix-and-view-matrix.png" alt="ESP-Image1" /></p>
+
+<p>Here the first 4x4 matrix look like the <em>Camera World Matrix</em> and the second 4x4 matrix looks like the <em>View Matrix</em>.</p>
+
+<h3 id="confirmation-of-the-view-and-camera-world-matrices"><strong>Confirmation of the View and Camera World Matrices:</strong></h3>
+
+<p>In <a href="/ViewProj-Blog/part-2.1-view-matrix/">Part 2.1: View Matrix</a> we talked about the orthogonality and relations of the fundamental Vectors.<br />
+Let’s open these matrices in reclass and use these relations to confirm it!</p>
+
+<p>Lets form an Hypothesis that this is the layout of the 4x4 Matrix:
+<img src="/ViewProj-Blog/assets/images/part-3/reclass-view-cam-hypothesis.png" alt="ESP-Image1" /></p>
+
+<p>Using its relations we can see:</p>
+<ul>
+  <li>Dot((-0.104, -0.06, 0.993), (0.5, -0.866, 0.00)) = <em>-3.9999999999998E-5</em> which is basically just <em>0</em> and is just floating-point precision error.</li>
+  <li>Cross((-0.104, -0.06, 0.993), (0.5, -0.866, 0.00)) = <em>(0.860, 0.496, 0.121)</em> which basically gave us the second row (starting row’s from 0)</li>
+</ul>
+
+<blockquote>
+  <p>This is handy in reverse engineering because you won’t always stumble on a perfect, clean 4×4 matrix in memory. Sometimes you’ll just find a couple 
+of direction vectors (like Right and Up) sitting in random spots or being passed into a function. With some quick vector math, you can fill 
+in the missing one using a cross product, or sanity-check them with a dot product (should be zero if they’re perpendicular). That way, even 
+if the layout is weird or partially obfuscated, you can still piece it together.<br />
+Also Handy if you are not sure if this ViewMatrix is not altered in any way eg: Its the Model-View Matrix.</p>
+</blockquote>
+
+<p>If the values are orthogonal, have unit lengths, include a clear translation component (usually the bigger numbers &gt; 1.0f), and end with the homogeneous 
+coordinate row or column [0, 0, 0, 1], you can be pretty sure it’s a real transformation matrix.</p>
+
+<blockquote>
+  <p>To be extra sure, don’t just trust the layout you find. The 0th row isn’t always Right and the last row isn’t always Translation. It’s usually 
+textbook layout in most games, but not always. Move the camera around and watch which parts of the matrix change. Let the behavior tell you what’s what.</p>
+</blockquote>
+
+<p><strong>Lets now inverse it to get the view matrix:</strong>
+<img src="/ViewProj-Blog/assets/images/part-3/cam-world-inverse.png" alt="ESP-Image1" /></p>
+
+<p>We can see it exactly matches the second 4x4 matrix we see in memory (Camera World Matrix (Inverse) = View Matrix).</p>
+
+<blockquote>
+  <p>We can also take dot(Right, Pos) and compare it against the translation component of the second matrix as another way to confirm this relationship.</p>
+</blockquote>
+
+<p>Thus pretty much confirming the first matrix to be <em>Camera World Matrix</em> and the second matrix to be the <em>View Matrix</em>.</p>
+
+<h3 id="looking-at-other-matrices"><strong>Looking at other matrices</strong></h3>
+
+<p>Here we see some other matrices:
+<img src="/ViewProj-Blog/assets/images/part-3/reclass-view-projection-matrix.png" alt="ESP-Image1" /></p>
+
+<p>The first matrix clearly resembles a projection matrix, but in this case, it uses a reverse-Z projection setup meaning the depth range is inverted so that the near plane maps to 1.0 
+and the far plane maps to 0.0.</p>
+
+<p>The second matrix appears to be the View-Projection (VP) matrix, produced by multiplying the Projection and View matrices together.</p>
+
+<p>The third matrix appears to be the View-Projection matrix but with the translation component zeroed out.</p>
+
+<p><strong>Why?</strong><br />
+Because they fit the general layout’s expected of these matrices.<br />
+To be sure lets plug in the view projection matrix into a world to screen function to see if we can confirm this.</p>
+
+<p>To verify i will manually input the entity coordinates into my world to screen program.<br />
+Here is the entity whose position we’ll convert:<br />
+<img src="/ViewProj-Blog/assets/images/part-3/view-proj-test-in-game.png" alt="ESP-Image1" /></p>
+
+<p>Since this image shows that the entity is at the top-left corner of our screen at a resolution of 1920x1080 we can expect the screen coordinates to
+be close to (0, 0) since the Top-left corner is the origin of the screen (0, 0), not bottom left as you might expect (unlike OpenGL).<br />
+<img src="/ViewProj-Blog/assets/images/part-3/view-proj-screen-pos-results.png" alt="ESP-Image1" /></p>
+
+<p>Here we can see the output screen coordinates matches closely to what we expected.</p>
+
+<blockquote>
+  <p>We’ll cover how to get the entity’s 3D coordinates and how World-to-Screen works in detail later, for now, this confirms the matrix is correct.</p>
+</blockquote>
+
+<h2 id="other-ways-to-get-the-vp-matrix"><strong>Other ways to get the VP matrix</strong></h2>
+
+<p>You don’t have to rely on pure luck to find the VP matrix. Instead of just stumbling across it, you can track it down by first finding the 
+camera world matrix, view matrix, and projection matrix, then checking which functions access these matrices.</p>
+
+<p>When digging through those functions in IDA, look for clues like:</p>
+
+<ul>
+  <li>Expected function arguments: e.g., does the function take both a View Matrix and a Projection Matrix?</li>
+  <li>SIMD-heavy math patterns: Does the function use SIMD math for matrix multiplication?</li>
+  <li>Matrix usage: Which matrices does it load for its calculations?</li>
+  <li>Inverse operations: Is it inverting the camera world matrix at any point?</li>
+</ul>
+
+<p><strong>Example:</strong></p>
+
+<p>I used this method to identify the VP matrix construction function in a Denuvo protected game, Ghost Recon Wildlands. I looked at what 
+accessed the projection matrix and found the function that builds the VP matrix.</p>
+
+<p><img src="/ViewProj-Blog/assets/images/part-3/got_esp1.png" alt="ESP-Image1" />
+<img src="/ViewProj-Blog/assets/images/part-3/GRWESP1.gif" alt="ESP-Image1" /></p>
+
+<p>Dealing with Denuvo’s anti-reverse engineering tricks and other protections felt like i was doing a lobotomy speedrun any%.<br />
+If you ever want to test your sanity, try reversing a Denuvo game.</p>
+
+<h2 id="trying-to-rebuild-the-view-projection-matrix"><strong>Trying to Rebuild the View-Projection Matrix</strong></h2>
+
+<p>Now that we have confirmed that this is in fact the view projection matrix lets try to reconstruct it manually</p>
+
+<ol>
+  <li>Take the suspected Projection Matrix</li>
+  <li>Multiply it by the inverse of the Camera World Matrix</li>
+</ol>
+
+<p><img src="/ViewProj-Blog/assets/images/part-3/discrepency-vp-with-vp-multiply.png" alt="ESP-Image1" /><br />
+Here for some reason it doesn’t quite match’s up although quite similar.</p>
+
+<p><em>Next Step: Time to start tracing back the functions that write to the final View-Projection Matrix in memory.</em></p>
+
+
+  </div><a class="u-url" href="/ViewProj-Blog/part-3-finding-and-reversing-matrices/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/ViewProj-Blog/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Reversing The ViewProjection Matrix</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">z1rp</li><li><a class="u-email" href="mailto:Zer0_1rp@proton.me">Zer0_1rp@proton.me</a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Reverse Engineering the ViewProjection Pipeline in Ghost of Tsushima</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>
+

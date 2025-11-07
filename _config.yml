@@ -1,0 +1,17 @@
+title: "Reversing The ViewProjection Matrix"
+description: "Reverse Engineering the ViewProjection Pipeline in Ghost of Tsushima"
+baseurl: "/ViewProj-Blog"
+url: "https://zero-irp.github.io"
+theme: minima
+plugins:
+  - jekyll-feed
+
+markdown: kramdown
+highlighter: rouge
+
+author: z1rp
+email: Zer0_1rp@proton.me
+show_excerpts: true
+
+minima:
+  skin: dark

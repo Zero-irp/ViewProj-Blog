@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Part 4.5: Detour Hooking to Optimize SIMD Operations | Reversing The ViewProjection Matrix</title>
+<meta name="generator" content="Jekyll v4.4.1" />
+<meta property="og:title" content="Part 4.5: Detour Hooking to Optimize SIMD Operations" />
+<meta name="author" content="z1rp" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Reverse Engineering the ViewProjection Pipeline in Ghost of Tsushima" />
+<meta property="og:description" content="Reverse Engineering the ViewProjection Pipeline in Ghost of Tsushima" />
+<link rel="canonical" href="http://localhost:4000/ViewProj-Blog/part-4.5-detour-hooking-simd-operations/" />
+<meta property="og:url" content="http://localhost:4000/ViewProj-Blog/part-4.5-detour-hooking-simd-operations/" />
+<meta property="og:site_name" content="Reversing The ViewProjection Matrix" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2025-07-17T00:00:00+05:30" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Part 4.5: Detour Hooking to Optimize SIMD Operations" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"z1rp"},"dateModified":"2025-07-17T00:00:00+05:30","datePublished":"2025-07-17T00:00:00+05:30","description":"Reverse Engineering the ViewProjection Pipeline in Ghost of Tsushima","headline":"Part 4.5: Detour Hooking to Optimize SIMD Operations","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/ViewProj-Blog/part-4.5-detour-hooking-simd-operations/"},"url":"http://localhost:4000/ViewProj-Blog/part-4.5-detour-hooking-simd-operations/"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/ViewProj-Blog/assets/css/style.css">
+  <link rel="stylesheet" href="/ViewProj-Blog/assets/css/syntax.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/ViewProj-Blog/feed.xml" title="Reversing The ViewProjection Matrix" /></head>
+<!-- ✅ MathJax setup -->
+  <script>
+    MathJax = {
+      tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <!-- ✅ End MathJax setup -->
+
+  <body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/ViewProj-Blog/">Reversing The ViewProjection Matrix</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/ViewProj-Blog/">Index</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Part 4.5: Detour Hooking to Optimize SIMD Operations</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2025-07-17T00:00:00+05:30" itemprop="datePublished">Jul 17, 2025
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <style>
+.cpp-code {
+  background: #1e1e1e;
+  color: #dcdcdc;
+  padding: 12px;
+  border-radius: 8px;
+  font-family: "Cascadia Code", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 14px;
+  line-height: 1.45;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+/* token colors */
+.cpp-code .kw      { color: #569cd6; }  /* keywords (if, for, return, etc.) */
+.cpp-code .type    { color: #4ec9b0; }  /* built-in / user types */
+.cpp-code .fn      { color: #dcdcaa; }  /* functions / intrinsics */
+.cpp-code .num     { color: #b5cea8; }  /* numbers */
+.cpp-code .var     { color: #9cdcfe; }  /* variables */
+.cpp-code .const   { color: #ce9178; }  /* string literals */
+.cpp-code .comment { color: #6a9955; font-style: italic; } /* comments */
+.cpp-code .preproc { color: #c586c0; }  /* #include, #define */
+</style>
+
+<style>
+.ida-code{
+  background:#1e1e1e;
+  color:#dcdcdc;
+  padding:12px;
+  border-radius:8px;
+  font-family: Consolas, "Liberation Mono", Menlo, monospace;
+  font-size:14px;
+  line-height:1.4;
+  overflow-x:auto;
+  white-space: pre; /* preserve spaces and linebreaks */
+}
+
+/* token classes you can use inside the div */
+.ida-code .kw    { color:#569cd6; } /* keywords */
+.ida-code .type  { color:#4ec9b0; } /* types */
+.ida-code .fn    { color:#dcdcaa; } /* functions / intrinsics */
+.ida-code .num   { color:#b5cea8; } /* numbers / hex */
+.ida-code .var   { color:#9cdcfe; } /* variables */
+.ida-code .const { color:#ce9178; } /* globals / constants */
+.ida-code .comment{ color:#6a9955; font-style:italic; }
+</style>
+
+<p>Before diving into raw assembly, let’s take a step back. The function below is responsible for adding translation into the VP Matrix</p>
+
+<div class="ida-code"><span class="kw">char</span> <span class="kw">__fastcall</span> <span class="fn">sub_7FBF10</span>(<span class="type">__int64</span> <span class="var">a1</span>, <span class="type">__m128</span> *<span class="var">CamPos</span>, <span class="type">__m128</span> *<span class="var">VP_NoTrans</span>)
+{
+  *(<span class="type">__m128</span> *)(<span class="var">CamStruct</span> + <span class="num">0x550</span>) = *<span class="var">CamPos</span>;
+  *(<span class="type">__m128</span> *)(<span class="var">CamStruct</span> + <span class="num">0x430</span>) = *<span class="var">VP_NoTrans</span>;
+  *(<span class="type">__m128</span> *)(<span class="var">CamStruct</span> + <span class="num">0x440</span>) = <span class="var">VP_NoTrans</span>[<span class="num">1</span>];
+  *(<span class="type">__m128</span> *)(<span class="var">CamStruct</span> + <span class="num">0x450</span>) = <span class="var">VP_NoTrans</span>[<span class="num">2</span>];
+  *(<span class="type">__m128</span> *)(<span class="var">CamStruct</span> + <span class="num">0x460</span>) = <span class="var">VP_NoTrans</span>[<span class="num">3</span>];
+  <span class="fn">sub_938210</span>(<span class="var">VP_NoTrans</span>, <span class="var">a1</span> + <span class="num">0x4B0</span>);
+  <span class="var">result</span> = <span class="fn">_mm_movemask_ps</span>(<span class="fn">_mm_cmplt_ps</span>(*(<span class="type">__m128</span> *)<span class="fn">sub_7CD6F0</span>(&amp;<span class="var">v21</span>, <span class="var">a1</span> + <span class="num">0x430</span>), (<span class="type">__m128</span>)<span class="num">0LL</span>)) == <span class="num">15</span>;
+  *(_BYTE *)(<span class="var">a1</span> + <span class="num">0x770</span>) = <span class="var">result</span>;
+  <span class="var">VP_NoTrans_Row1</span> = <span class="var">VP_NoTrans</span>[<span class="num">1</span>];
+  <span class="var">VP_NoTrans_Row0</span> = *<span class="var">VP_NoTrans</span>;
+  <span class="var">CamPos_Negated_w0</span> = <span class="fn">_mm_sub_ps</span>((<span class="type">__m128</span>)<span class="num">0LL</span>, <span class="fn">_mm_and_ps</span>((<span class="type">__m128</span>)<span class="const">NaNNaNNaN0f_Mask</span>, *<span class="var">CamPos</span>));
+  <span class="var">VP_NoTrans_Row2</span> = <span class="var">VP_NoTrans</span>[<span class="num">2</span>];
+  <span class="var">VP_NoTrans_Row3</span> = <span class="var">VP_NoTrans</span>[<span class="num">3</span>];
+  <span class="var">Mask_0010</span> = <span class="fn">_mm_and_ps</span>((<span class="type">__m128</span>)<span class="const">xmmword_1138D00</span>, (<span class="type">__m128</span>)<span class="const">NaNNaNNaN0f_Mask</span>);
+  <span class="var">Mask_0100</span> = <span class="fn">_mm_and_ps</span>((<span class="type">__m128</span>)<span class="const">xmmword_1138CF0</span>, (<span class="type">__m128</span>)<span class="const">NaNNaNNaN0f_Mask</span>);
+  <span class="var">CamPos_Negated_w1</span> = <span class="fn">_mm_shuffle_ps</span>(
+		        <span class="var">CamPos_Negated_w0</span>, 
+		        <span class="fn">_mm_shuffle_ps</span>((<span class="type">__m128</span>)<span class="const">Mask_1111f</span>, <span class="var">CamPos_Negated_w0</span>, <span class="num">0xA0</span>), 
+	                <span class="num">0x24</span>);
+  <span class="var">Mask_1000</span> = <span class="fn">_mm_and_ps</span>((<span class="type">__m128</span>)<span class="const">xmmword_1138CE0</span>, (<span class="type">__m128</span>)<span class="const">NaNNaNNaN0f_Mask</span>);
+  <span class="comment">// -CamPos with w = 1</span>
+  <span class="var">CamPos_Negated_w1_dup</span> = <span class="fn">_mm_shuffle_ps</span>(
+			    <span class="var">CamPos_Negated_w1</span>, 
+			    <span class="fn">_mm_shuffle_ps</span>((<span class="type">__m128</span>)<span class="const">Mask_1111f</span>, <span class="var">CamPos_Negated_w1</span>, <span class="num">0xA0</span>), 
+			    <span class="num">0x24</span>);
+  <span class="var">v17</span> = <span class="fn">_mm_add_ps</span>(
+          <span class="fn">_mm_add_ps</span>(
+            <span class="fn">_mm_add_ps</span>(
+	      <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">CamPos_Negated_w1_dup</span>, <span class="var">CamPos_Negated_w1_dup</span>, <span class="num">0x55</span>), <span class="var">VP_NoTrans_Row1</span>), 
+	      <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">CamPos_Negated_w1_dup</span>, <span class="var">CamPos_Negated_w1_dup</span>, <span class="num">0</span>), *<span class="var">VP_NoTrans</span>)),
+            <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">CamPos_Negated_w1_dup</span>, <span class="var">CamPos_Negated_w1_dup</span>, <span class="num">0xAA</span>), <span class="var">VP_NoTrans_Row2</span>)),
+          <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">CamPos_Negated_w1_dup</span>, <span class="var">CamPos_Negated_w1_dup</span>, <span class="num">0xFF</span>), <span class="var">VP_NoTrans_Row3</span>));
+  <span class="var">v18</span> = <span class="fn">_mm_add_ps</span>(
+	 <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">Mask_0100</span>, <span class="var">Mask_0100</span>, <span class="num">0x55</span>), <span class="var">VP_NoTrans_Row1</span>), 
+	 <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">Mask_0100</span>, <span class="var">Mask_0100</span>, <span class="num">0</span>), *<span class="var">VP_NoTrans</span>));
+  *(<span class="type">__m128</span> *)(<span class="var">a1</span> + <span class="num">0x260</span>) = <span class="fn">_mm_add_ps</span>(
+                              <span class="fn">_mm_add_ps</span>(
+                                <span class="fn">_mm_add_ps</span>(
+                                  <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">Mask_0010</span>, <span class="var">Mask_0010</span>, <span class="num">0x55</span>), <span class="var">VP_NoTrans_Row1</span>),
+                                  <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">Mask_0010</span>, <span class="var">Mask_0010</span>, <span class="num">0</span>), *<span class="var">VP_NoTrans</span>)),
+                                <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">Mask_0010</span>, <span class="var">Mask_0010</span>, <span class="num">0xAA</span>), <span class="var">VP_NoTrans_Row2</span>)),
+                              <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">Mask_0010</span>, <span class="var">Mask_0010</span>, <span class="num">0xFF</span>), <span class="var">VP_NoTrans_Row3</span>));
+  *(<span class="type">__m128</span> *)(<span class="var">a1</span> + <span class="num">0x270</span>) = <span class="var">v17</span>;
+  *(<span class="type">__m128</span> *)(<span class="var">a1</span> + <span class="num">0x250</span>) = <span class="fn">_mm_add_ps</span>(
+                              <span class="fn">_mm_add_ps</span>(<span class="var">v18</span>, <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">Mask_0100</span>, <span class="var">Mask_0100</span>, <span class="num">0xAA</span>), <span class="var">VP_NoTrans_Row2</span>)),
+                              <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">Mask_0100</span>, <span class="var">Mask_0100</span>, <span class="num">0xFF</span>), <span class="var">VP_NoTrans_Row3</span>));
+  *(<span class="type">__m128</span> *)(<span class="var">a1</span> + <span class="num">0x240</span>) = <span class="fn">_mm_add_ps</span>(
+                              <span class="fn">_mm_add_ps</span>(
+                                <span class="fn">_mm_add_ps</span>(
+                                  <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">Mask_1000</span>, <span class="var">Mask_1000</span>, <span class="num">0x55</span>), <span class="var">VP_NoTrans_Row1</span>),
+                                  <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">Mask_1000</span>, <span class="var">Mask_1000</span>, <span class="num">0</span>), <span class="var">VP_NoTrans_Row0</span>)),
+                                <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">Mask_1000</span>, <span class="var">Mask_1000</span>, <span class="num">0xAA</span>), <span class="var">VP_NoTrans_Row2</span>)),
+                              <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">Mask_1000</span>, <span class="var">Mask_1000</span>, <span class="num">0xFF</span>), <span class="var">VP_NoTrans_Row3</span>));
+  <span class="var">v19</span> = *(<span class="type">unsigned __int64</span> *)(<span class="var">a1</span> + <span class="num">0x6A4</span>);
+  <span class="var">v20</span> = <span class="fn">_mm_movelh_ps</span>((<span class="type">__m128</span>)*(<span class="type">unsigned __int64</span> *)(<span class="var">a1</span> + <span class="num">1708</span>), (<span class="type">__m128</span>)<span class="const">xmmword_10F0E00</span>);
+  <span class="var">v21</span> = <span class="var">v19</span>;
+  <span class="kw">if</span> ( !<span class="const">byte_34ADB00</span> )
+  {
+    <span class="fn">sub_7F8F40</span>(<span class="var">a1</span>, (<span class="kw">int</span>)&amp;<span class="var">v21</span>, (<span class="kw">int</span>)&amp;<span class="var">v20</span>, <span class="num">6</span>, <span class="var">a1</span> + <span class="num">1264</span>);
+    <span class="var">result</span> = *(_BYTE *)(<span class="var">a1</span> + <span class="num">0x770</span>);
+    *(_BYTE *)(<span class="var">a1</span> + <span class="num">0x771</span>) = <span class="var">result</span>;
+  }
+  <span class="kw">return</span> <span class="var">result</span>;
+}	
+
+</div>
+
+<p>In the previous post, I already pointed out how the game tends to over-engineer certain SIMD operations, performing a Vec4 × Matrix4x4 to 
+reconstruct data that’s already directly available. Now it’s time to actually optimize those sequences.</p>
+
+<p>Take this section from sub_7FBF10, for example. At first glance, it looks like a massive chain of _mm_shuffle_ps, _mm_mul_ps, and 
+_mm_add_ps calls:</p>
+
+<div class="ida-code"><span class="var">v18</span> = <span class="fn">_mm_add_ps</span>(
+	 <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">Mask_0100</span>, <span class="var">Mask_0100</span>, <span class="num">0x55</span>), <span class="var">VP_NoTrans_Row1</span>), 
+         <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">Mask_0100</span>, <span class="var">Mask_0100</span>, <span class="num">0</span>), *<span class="var">VP_NoTrans</span>));
+ *(<span class="type">__m128</span> *)(<span class="var">a1</span> + <span class="num">0x260</span>) = <span class="fn">_mm_add_ps</span>(
+                             <span class="fn">_mm_add_ps</span>(
+                                <span class="fn">_mm_add_ps</span>(
+                                 <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">Mask_0010</span>, <span class="var">Mask_0010</span>, <span class="num">0x55</span>), <span class="var">VP_NoTrans_Row1</span>),
+                                 <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">Mask_0010</span>, <span class="var">Mask_0010</span>, <span class="num">0</span>), *<span class="var">VP_NoTrans</span>)),
+                               <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">Mask_0010</span>, <span class="var">Mask_0010</span>, <span class="num">0xAA</span>), <span class="var">VP_NoTrans_Row2</span>)),
+                             <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">Mask_0010</span>, <span class="var">Mask_0010</span>, <span class="num">0xFF</span>), <span class="var">VP_NoTrans_Row3</span>));
+ *(<span class="type">__m128</span> *)(<span class="var">a1</span> + <span class="num">0x270</span>) = <span class="var">v17</span>;
+ *(<span class="type">__m128</span> *)(<span class="var">a1</span> + <span class="num">0x250</span>) = <span class="fn">_mm_add_ps</span>(
+                             <span class="fn">_mm_add_ps</span>(<span class="var">v18</span>, <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">Mask_0100</span>, <span class="var">Mask_0100</span>, <span class="num">0xAA</span>), <span class="var">VP_NoTrans_Row2</span>)),
+                             <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">Mask_0100</span>, <span class="var">Mask_0100</span>, <span class="num">0xFF</span>), <span class="var">VP_NoTrans_Row3</span>));
+ *(<span class="type">__m128</span> *)(<span class="var">a1</span> + <span class="num">0x240</span>) = <span class="fn">_mm_add_ps</span>(
+                             <span class="fn">_mm_add_ps</span>(
+                               <span class="fn">_mm_add_ps</span>(
+                                 <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">Mask_1000</span>, <span class="var">Mask_1000</span>, <span class="num">0x55</span>), <span class="var">VP_NoTrans_Row1</span>),
+                                 <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">Mask_1000</span>, <span class="var">Mask_1000</span>, <span class="num">0</span>), <span class="var">VP_NoTrans_Row0</span>)),
+                               <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">Mask_1000</span>, <span class="var">Mask_1000</span>, <span class="num">0xAA</span>), <span class="var">VP_NoTrans_Row2</span>)),
+                             <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">Mask_1000</span>, <span class="var">Mask_1000</span>, <span class="num">0xFF</span>), <span class="var">VP_NoTrans_Row3</span>));
+</div>
+
+<p>But once you peel away all the unnecessary work, the end result collapses into something much cleaner:</p>
+
+<div class="ida-code">*(<span class="type">__m128</span> *)(<span class="var">a1</span> + <span class="num">0x240</span>) = <span class="var">VP_NoTrans_Row0</span>
+*(<span class="type">__m128</span> *)(<span class="var">a1</span> + <span class="num">0x250</span>) = <span class="var">VP_NoTrans_Row1</span>
+*(<span class="type">__m128</span> *)(<span class="var">a1</span> + <span class="num">0x260</span>) = <span class="var">VP_NoTrans_Row2</span>
+*(<span class="type">__m128</span> *)(<span class="var">a1</span> + <span class="num">0x270</span>) = <span class="var">v17</span>
+</div>
+
+<p>This is just the largest redundancy in the function, not the only one.</p>
+
+<p>For this function we will not be manually nopping SIMD instructions in assembly as that is going to take a lot of effort.<br />
+Instead we will use a method called detour hooking.</p>
+
+<h3 id="what-is-detour-hooking"><strong>What is detour Hooking?</strong></h3>
+
+<p>Just as the name suggests, detour hooking is a technique that forces a function to take a different route, you modify the machine code at any point of a function so that, 
+when execution reaches it, control detours into your handler instead of following the original straight path. You usually do this by overwriting the first few bytes to a 
+jump instruction. When that patched area executes, the CPU follows your detour.</p>
+
+<p>Now in your detour you can implement your own custom code to do whatever you want it to, but keep in mind it is critical to preserve the original execution flow. 
+This means you must carefully manage the CPU’s state (registers, flags, and stack) to ensure the program continues to behave correctly after your code runs.<br />
+Common pitfalls include creating dead ends, returning incorrectly, corrupting registers, misalignment of stack (ABI convention RSP % 16 == 0 when a call is executed)</p>
+
+<p>Think of it this way:</p>
+
+<p>you put a sign on the road that tells execution: “take this turn first,” but the car should always reach point B if you don’t want your game to crash.</p>
+
+<p>Let me explain what we are going to be doing in a high level conceptually:</p>
+
+<p>We’re looking at this function and it’s flooded with redundant SIMD instructions. Most of them contribute to the final ViewProjection result just in 
+a very overengineered way that takes away performance (marginally). But scattered in between, there are still useful SIMD ops we need to keep:</p>
+
+<p>Like:</p>
+
+<div class="ida-code"><span class="var">v17</span> = <span class="fn">_mm_add_ps</span>(
+          <span class="fn">_mm_add_ps</span>(
+            <span class="fn">_mm_add_ps</span>(
+	      <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">CamPos_Negated_w1_dup</span>, <span class="var">CamPos_Negated_w1_dup</span>, <span class="num">0x55</span>), <span class="var">VP_NoTrans_Row1</span>), 
+	      <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">CamPos_Negated_w1_dup</span>, <span class="var">CamPos_Negated_w1_dup</span>, <span class="num">0</span>), *<span class="var">VP_NoTrans</span>)),
+            <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">CamPos_Negated_w1_dup</span>, <span class="var">CamPos_Negated_w1_dup</span>, <span class="num">0xAA</span>), <span class="var">VP_NoTrans_Row2</span>)),
+          <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">CamPos_Negated_w1_dup</span>, <span class="var">CamPos_Negated_w1_dup</span>, <span class="num">0xFF</span>), <span class="var">VP_NoTrans_Row3</span>));
+</div>
+
+<p>This construction of v17 is important as this is the one that constructs ViewProjection matrix with the translation. This function is scattered 
+among the overengineered SIMD ops.</p>
+
+<h3 id="heres-the-approach"><strong>Here’s the approach:</strong></h3>
+
+<ul>
+  <li>Match assembly to pseudocode: I’ll go through the disassembly and identify which SIMD instructions actually correspond to the math we care 
+about. The rest is junk.</li>
+  <li>Build a custom hook: In a new code cave, I’ll re-implement only the useful SIMD ops in the correct order. This way, 
+the essential calculations survive but the redundant ops get skipped.</li>
+  <li>Redirect execution flow: At the entry point of the redundant section, I’ll overwrite the first 5 bytes with a jmp to my code cave.
+    <ul>
+      <li>My custom logic runs (only useful SIMD).</li>
+      <li>When done, I jmp back into the function after the redundant block, so execution continues.</li>
+    </ul>
+  </li>
+</ul>
+
+<p>This way, we don’t touch every instruction one by one, we just surgically detour into our cleaner version and rejoin the original code later 
+skipping all redundant operations.</p>
+
+<p><img src="/ViewProj-Blog/assets/images/part-4.5/redundant_simd_assembly.png" alt="ESP-Image1" /></p>
+
+<p><em>Text highlighted in green is redundant, Text highlighted in black are required calulations.</em></p>
+
+<p>What we will be doing to circumvent it:</p>
+
+<p><img src="/ViewProj-Blog/assets/images/part-4.5/detourhook_codecave.png" alt="ESP-Image1" /></p>
+
+<p>Now, before diving in</p>
+
+<p>I won’t be showing how to find code caves here, that is out of scope for this blog. Just know that in this case, I’ll be using a code cave that’s 
+conveniently located close enough to our target function.</p>
+
+<h3 id="5-byte-jmp-hook-vs-13-byte-jmp-hook"><strong>5 Byte Jmp hook vs 13 Byte Jmp hook</strong></h3>
+
+<p>For the actual detour, I’ll be using the classic 5-byte jmp instruction.</p>
+<ul>
+  <li>It’s made up of E9 (the jmp opcode) + a 4-byte signed relative offset.</li>
+  <li>That offset can reach anywhere within ±2 GB of the jump site.</li>
+  <li>This is why having a nearby code cave matters, you need the cave within that 2 GB window.</li>
+</ul>
+
+<p>If you can’t rely on code caves (maybe there aren’t any close enough), then you can allocate your own memory with something like 
+VirtualAllocEx. But in that case, the E9 relative jump won’t cut it anymore unless you allocate between ±2 GB.</p>
+
+<p>That’s when you switch to a mov+jmp sequence:</p>
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">mov</span> <span class="n">rax</span><span class="p">,</span> <span class="o">&lt;</span><span class="n">absolute</span> <span class="n">address</span><span class="o">&gt;</span>
+<span class="n">jmp</span> <span class="n">rax</span>
+</code></pre></div></div>
+<blockquote>
+  <p>Keep in mind this takes an absolute address where as the 5 byte jmp takes the offset from the instruction address to the location we need to go</p>
+</blockquote>
+
+<p>It takes more bytes (usually 12+ depending on the register used), but it can jump anywhere in 64-bit address space. So:</p>
+
+<ul>
+  <li>If you’ve got a cave nearby → use the 5-byte jmp.</li>
+  <li>If not → allocate memory, use mov rax; jmp rax.</li>
+</ul>
+
+<p>Either way, the result is the same</p>
+
+<div class="ida-code">*(<span class="type">__m128</span> *)(<span class="var">a1</span> + <span class="num">0x240</span>) = <span class="var">VP_NoTrans_Row0</span>
+*(<span class="type">__m128</span> *)(<span class="var">a1</span> + <span class="num">0x250</span>) = <span class="var">VP_NoTrans_Row1</span>
+*(<span class="type">__m128</span> *)(<span class="var">a1</span> + <span class="num">0x260</span>) = <span class="var">VP_NoTrans_Row2</span>
+*(<span class="type">__m128</span> *)(<span class="var">a1</span> + <span class="num">0x270</span>) = <span class="var">v17</span>
+</div>
+
+<p>We will add this in our code-cave (Keep in mind a1 is rbp in this specific case):</p>
+
+<ul>
+  <li>VP_NoTrans_Row0 holds its value inside xmm8</li>
+  <li>VP_NoTrans_Row1 holds its value inside xmm6</li>
+  <li>VP_NoTrans_Row2 holds its value inside xmm9</li>
+  <li>v17 holds its value inside xmm11</li>
+</ul>
+
+<p>All these were found using our previous method of IDA synchronize or just hover over the variable and IDA will display the register which holds it.</p>
+
+<h3 id="writing-our-hook">Writing our hook:</h3>
+
+<div class="cpp-code"><span class="kw">int</span> <span class="fn">main</span>()<br />{
+&nbsp;&nbsp;<span class="comment">// Get the process ID</span>
+&nbsp;&nbsp;<span class="type">DWORD</span> <span class="var">procId</span> = <span class="fn">GetProcId</span>(<span class="const">L"GhostOfTsushima.exe"</span>);
+&nbsp;&nbsp;<span class="fn">CHECK</span>(<span class="var">procId</span>);
+
+&nbsp;&nbsp;<span class="fn">printf</span>(<span class="const">"ProcID: %d \n"</span>, <span class="var">procId</span>);
+
+&nbsp;&nbsp;<span class="comment">// Get the base Address</span>
+&nbsp;&nbsp;<span class="var">baseAddr</span> = <span class="fn">GetModuleBaseAddress</span>(<span class="var">procId</span>, <span class="const">L"GhostOfTsushima.exe"</span>);
+&nbsp;&nbsp;<span class="fn">CHECK</span>(<span class="var">baseAddr</span>);
+
+&nbsp;&nbsp;<span class="fn">printf</span>(<span class="const">"BaseAddr: %llx \n"</span>, <span class="var">baseAddr</span>);
+
+&nbsp;&nbsp;<span class="comment">// Open a handle to the process with full access</span>
+&nbsp;&nbsp;<span class="var">hProcess</span> = <span class="fn">OpenProcess</span>(<span class="const">PROCESS_ALL_ACCESS</span>, <span class="kw">false</span>, <span class="var">procId</span>);
+&nbsp;&nbsp;<span class="fn">CHECK</span>(<span class="var">hProcess</span>);
+
+&nbsp;&nbsp;<span class="comment">// Address of where we will place our jump</span>
+&nbsp;&nbsp;<span class="type">uintptr_t</span> <span class="var">patchAddr</span> = <span class="var">baseAddr</span> + <span class="var">patchOff</span>;
+
+&nbsp;&nbsp;<span class="comment">// Address of our code cave</span>
+&nbsp;&nbsp;<span class="type">uintptr_t</span> <span class="var">caveAddr</span> = <span class="var">baseAddr</span> + <span class="var">caveOff</span>;
+
+&nbsp;&nbsp;<span class="comment">// The address in the original function where execution should continue</span>
+&nbsp;&nbsp;<span class="type">uintptr_t</span> <span class="var">originalFuncContinue</span> = <span class="var">baseAddr</span> + <span class="num">0x7FC122</span>;
+
+&nbsp;&nbsp;<span class="comment">// Calculate relative offset for E9 jmp (rel32)</span>
+&nbsp;&nbsp;<span class="type">int64_t</span> <span class="var">rel64</span> = (<span class="type">int64_t</span>)<span class="var">caveAddr</span> - ((<span class="type">int64_t</span>)<span class="var">patchAddr</span> + <span class="num">5</span>);
+&nbsp;&nbsp;<span class="type">int32_t</span> <span class="var">rel32</span> = (<span class="type">int32_t</span>)<span class="var">rel64</span>;
+
+&nbsp;&nbsp;<span class="comment">// 5-byte jmp instruction: E9 &lt;rel32&gt;</span>
+&nbsp;&nbsp;<span class="type">BYTE</span> <span class="var">jmpToCave</span>[<span class="num">5</span>] = { <span class="num">0xE9</span> };
+&nbsp;&nbsp;<span class="fn">memcpy</span>(<span class="var">jmpToCave</span> + <span class="num">1</span>, &amp;<span class="var">rel32</span>, <span class="num">4</span>);
+
+&nbsp;&nbsp;<span class="comment">// Overwrite target function bytes with our jump to code cave</span>
+&nbsp;&nbsp;<span class="fn">WriteProcessMemory</span>(<span class="var">hProcess</span>, (<span class="type">BYTE*</span>)<span class="var">baseAddr</span> + <span class="var">patchOff</span>, <span class="var">jmpToCave</span>, <span class="fn">sizeof</span>(<span class="var">jmpToCave</span>), <span class="kw">nullptr</span>);
+
+&nbsp;&nbsp;<span class="type">BYTE</span> <span class="var">shellCode</span>[<span class="num">54</span>] = { 
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="num">0x44</span>, <span class="num">0x0F</span>, <span class="num">0x59</span>, <span class="num">0xDE</span>, <span class="comment">// mulps xmm11, xmm6</span>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="num">0x44</span>, <span class="num">0x0F</span>, <span class="num">0x58</span>, <span class="num">0xD8</span>, <span class="comment">// addps xmm11, xmm0</span>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="num">0x44</span>, <span class="num">0x0F</span>, <span class="num">0x58</span>, <span class="num">0xD9</span>, <span class="comment">// addps xmm11, xmm1</span>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="num">0x44</span>, <span class="num">0x0F</span>, <span class="num">0x58</span>, <span class="num">0xDB</span>, <span class="comment">// addps xmm11, xmm3</span>
+
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">// Store final results</span>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="num">0x44</span>, <span class="num">0x0F</span>, <span class="num">0x11</span>, <span class="num">0x9D</span>, <span class="num">0x70</span>, <span class="num">0x02</span>, <span class="num">0x00</span>, <span class="num">0x00</span>, <span class="comment">// movups [rbp+0x270], xmm11</span>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="num">0x44</span>, <span class="num">0x0F</span>, <span class="num">0x11</span>, <span class="num">0x8D</span>, <span class="num">0x60</span>, <span class="num">0x02</span>, <span class="num">0x00</span>, <span class="num">0x00</span>, <span class="comment">// movups [rbp+0x260], xmm9</span>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="num">0x0F</span>, <span class="num">0x11</span>, <span class="num">0xB5</span>, <span class="num">0x50</span>, <span class="num">0x02</span>, <span class="num">0x00</span>, <span class="num">0x00</span>, <span class="comment">// movups [rbp+0x250], xmm6</span>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="num">0x44</span>, <span class="num">0x0F</span>, <span class="num">0x11</span>, <span class="num">0x85</span>, <span class="num">0x40</span>, <span class="num">0x02</span>, <span class="num">0x00</span>, <span class="num">0x00</span>, <span class="comment">// movups [rbp+0x240], xmm8</span>
+
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="num">0x0F</span>, <span class="num">0x28</span>, <span class="num">0x0D</span>, <span class="num">0x65</span>, <span class="num">0x28</span>, <span class="num">0x8E</span>, <span class="num">0x00</span> <span class="comment">// movaps xmm1, cs:xmmword_10F0E00</span>
+&nbsp;&nbsp;};
+
+&nbsp;&nbsp;<span class="comment">// Storage for our payload</span>
+&nbsp;&nbsp;<span class="type">BYTE</span> <span class="var">fullPatch</span>[<span class="num">59</span>];
+&nbsp;&nbsp;<span class="type">size_t</span> <span class="var">offset</span> = <span class="num">0</span>;
+
+&nbsp;&nbsp;<span class="comment">// Storing our entire payload</span>
+&nbsp;&nbsp;<span class="fn">memcpy</span>(&amp;<span class="var">fullPatch</span>[<span class="var">offset</span>], <span class="var">shellCode</span>, <span class="fn">sizeof</span>(<span class="var">shellCode</span>)); <span class="var">offset</span> += <span class="fn">sizeof</span>(<span class="var">shellCode</span>);
+
+&nbsp;&nbsp;<span class="comment">// Calculate relative offset for jump back (from end of cave code)</span>
+&nbsp;&nbsp;<span class="type">int64_t</span> <span class="var">rel64_back</span> = (<span class="type">int64_t</span>)<span class="var">originalFuncContinue</span> - ((<span class="type">int64_t</span>)<span class="var">caveAddr</span> + (<span class="type">int64_t</span>)<span class="var">offset</span> + <span class="num">5</span>);
+&nbsp;&nbsp;<span class="type">int32_t</span> <span class="var">rel32_back</span> = (<span class="type">int32_t</span>)<span class="var">rel64_back</span>;
+
+&nbsp;&nbsp;<span class="comment">// Jump back: E9 &lt;rel32&gt;</span>
+&nbsp;&nbsp;<span class="type">BYTE</span> <span class="var">jmpBack</span>[<span class="num">5</span>] = { <span class="num">0xE9</span> };
+&nbsp;&nbsp;<span class="fn">memcpy</span>(<span class="var">jmpBack</span> + <span class="num">1</span>, &amp;<span class="var">rel32_back</span>, <span class="num">4</span>);
+
+&nbsp;&nbsp;<span class="comment">// Store our jump back to our payload</span>
+&nbsp;&nbsp;<span class="fn">memcpy</span>(&amp;<span class="var">fullPatch</span>[<span class="var">offset</span>], <span class="var">jmpBack</span>, <span class="fn">sizeof</span>(<span class="var">jmpBack</span>));
+
+&nbsp;&nbsp;<span class="comment">// Write full payload (our SIMD patch + jump back) into code cave</span>
+&nbsp;&nbsp;<span class="fn">WriteProcessMemory</span>(<span class="var">hProcess</span>, (<span class="type">BYTE*</span>)<span class="var">baseAddr</span> + <span class="var">caveOff</span>, <span class="var">fullPatch</span>, <span class="fn">sizeof</span>(<span class="var">fullPatch</span>), <span class="kw">nullptr</span>);
+
+&nbsp;&nbsp;<span class="kw">return</span> <span class="num">0</span>;
+}
+</div>
+
+<h3 id="code-explanation">Code Explanation:</h3>
+
+<p><strong>Process Setup:</strong></p>
+
+<div class="cpp-code">&nbsp;&nbsp;<span class="type">DWORD</span> <span class="var">procId</span> = <span class="fn">GetProcId</span>(<span class="const">L"GhostOfTsushima.exe"</span>);
+&nbsp;&nbsp;<span class="var">baseAddr</span> = <span class="fn">GetModuleBaseAddress</span>(<span class="var">procId</span>, <span class="const">L"GhostOfTsushima.exe"</span>);
+&nbsp;&nbsp;<span class="var">hProcess</span> = <span class="fn">OpenProcess</span>(<span class="const">PROCESS_ALL_ACCESS</span>, <span class="kw">false</span>, <span class="var">procId</span>);
+</div>
+
+<p>We first locate the target game process and obtain a handle to the process for memory patching.</p>
+
+<p><strong>Detour Address Calculation:</strong></p>
+
+<div class="cpp-code">&nbsp;&nbsp;<span class="type">uintptr_t</span> <span class="var">patchAddr</span> = <span class="var">baseAddr</span> + <span class="var">patchOff</span>;
+&nbsp;&nbsp;<span class="type">uintptr_t</span> <span class="var">caveAddr</span> = <span class="var">baseAddr</span> + <span class="var">caveOff</span>;
+&nbsp;&nbsp;<span class="type">uintptr_t</span> <span class="var">originalFuncContinue</span> = <span class="var">baseAddr</span> + <span class="num">0x7FC122</span>;
+</div>
+
+<p>We will calculate the exact location in the original function where we’ll hijack execution.</p>
+
+<p><strong>Forward Detour Creation:</strong></p>
+<div class="cpp-code">&nbsp;&nbsp;<span class="comment">// Calculate relative jump to our code cave &lt;rel32&gt;</span>
+&nbsp;&nbsp;<span class="type">int64_t</span> <span class="var">rel64</span> = (<span class="type">int64_t</span>)<span class="var">caveAddr</span> - ((<span class="type">int64_t</span>)<span class="var">patchAddr</span> + <span class="num">5</span>);
+&nbsp;&nbsp;<span class="type">int32_t</span> <span class="var">rel32</span> = (<span class="type">int32_t</span>)<span class="var">rel64</span>;
+
+&nbsp;&nbsp;<span class="comment">// 5-byte jmp instruction: E9 &lt;rel32&gt;</span>
+&nbsp;&nbsp;<span class="type">BYTE</span> <span class="var">jmpToCave</span>[<span class="num">5</span>] = { <span class="num">0xE9</span> };
+&nbsp;&nbsp;<span class="fn">memcpy</span>(<span class="var">jmpToCave</span> + <span class="num">1</span>, &amp;<span class="var">rel32</span>, <span class="num">4</span>);
+&nbsp;&nbsp;<span class="fn">WriteProcessMemory</span>(<span class="var">hProcess</span>, (<span class="type">BYTE*</span>)<span class="var">baseAddr</span> + <span class="var">patchOff</span>, <span class="var">jmpToCave</span>, <span class="fn">sizeof</span>(<span class="var">jmpToCave</span>), <span class="kw">nullptr</span>);
+</div>
+
+<p>We Replace the first 5 bytes at the target address with JMP <code_cave> (Relative Address).</code_cave></p>
+
+<p><strong>SIMD Optimization Payload:</strong></p>
+
+<div class="cpp-code">&nbsp;&nbsp;<span class="type">BYTE</span> <span class="var">shellCode</span>[<span class="num">54</span>] = { 
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="num">0x44</span>, <span class="num">0x0F</span>, <span class="num">0x59</span>, <span class="num">0xDE</span>, <span class="comment">// mulps xmm11, xmm6</span>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="num">0x44</span>, <span class="num">0x0F</span>, <span class="num">0x58</span>, <span class="num">0xD8</span>, <span class="comment">// addps xmm11, xmm0</span>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="num">0x44</span>, <span class="num">0x0F</span>, <span class="num">0x58</span>, <span class="num">0xD9</span>, <span class="comment">// addps xmm11, xmm1</span>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="num">0x44</span>, <span class="num">0x0F</span>, <span class="num">0x58</span>, <span class="num">0xDB</span>, <span class="comment">// addps xmm11, xmm3</span>
+
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">// Store final results</span>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="num">0x44</span>, <span class="num">0x0F</span>, <span class="num">0x11</span>, <span class="num">0x9D</span>, <span class="num">0x70</span>, <span class="num">0x02</span>, <span class="num">0x00</span>, <span class="num">0x00</span>, <span class="comment">// movups [rbp+0x270], xmm11</span>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="num">0x44</span>, <span class="num">0x0F</span>, <span class="num">0x11</span>, <span class="num">0x8D</span>, <span class="num">0x60</span>, <span class="num">0x02</span>, <span class="num">0x00</span>, <span class="num">0x00</span>, <span class="comment">// movups [rbp+0x260], xmm9</span>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="num">0x0F</span>, <span class="num">0x11</span>, <span class="num">0xB5</span>, <span class="num">0x50</span>, <span class="num">0x02</span>, <span class="num">0x00</span>, <span class="num">0x00</span>, <span class="comment">// movups [rbp+0x250], xmm6</span>
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="num">0x44</span>, <span class="num">0x0F</span>, <span class="num">0x11</span>, <span class="num">0x85</span>, <span class="num">0x40</span>, <span class="num">0x02</span>, <span class="num">0x00</span>, <span class="num">0x00</span>, <span class="comment">// movups [rbp+0x240], xmm8</span>
+
+&nbsp;&nbsp;&nbsp;&nbsp;<span class="num">0x0F</span>, <span class="num">0x28</span>, <span class="num">0x0D</span>, <span class="num">0x65</span>, <span class="num">0x28</span>, <span class="num">0x8E</span>, <span class="num">0x00</span> <span class="comment">// movaps xmm1, cs:xmmword_10F0E00</span>
+&nbsp;&nbsp;};
+</div>
+
+<p><strong>Return Jump:</strong></p>
+
+<div class="cpp-code">&nbsp;&nbsp;<span class="comment">// Calculate relative offset for jump back (from end of cave code)</span>
+&nbsp;&nbsp;<span class="type">int64_t</span> <span class="var">rel64_back</span> = (<span class="type">int64_t</span>)<span class="var">originalFuncContinue</span> - ((<span class="type">int64_t</span>)<span class="var">caveAddr</span> + (<span class="type">int64_t</span>)<span class="var">offset</span> + <span class="num">5</span>);
+&nbsp;&nbsp;<span class="type">int32_t</span> <span class="var">rel32_back</span> = (<span class="type">int32_t</span>)<span class="var">rel64_back</span>;
+
+&nbsp;&nbsp;<span class="comment">// Jump back: E9 &lt;rel32&gt;</span>
+&nbsp;&nbsp;<span class="type">BYTE</span> <span class="var">jmpBack</span>[<span class="num">5</span>] = { <span class="num">0xE9</span> };
+&nbsp;&nbsp;<span class="fn">memcpy</span>(<span class="var">jmpBack</span> + <span class="num">1</span>, &amp;<span class="var">rel32_back</span>, <span class="num">4</span>);
+
+&nbsp;&nbsp;<span class="comment">// Store our jump back to our payload</span>
+&nbsp;&nbsp;<span class="fn">memcpy</span>(&amp;<span class="var">fullPatch</span>[<span class="var">offset</span>], <span class="var">jmpBack</span>, <span class="fn">sizeof</span>(<span class="var">jmpBack</span>));
+
+&nbsp;&nbsp;<span class="comment">// Write full payload (our SIMD patch + jump back) into code cave</span>
+&nbsp;&nbsp;<span class="fn">WriteProcessMemory</span>(<span class="var">hProcess</span>, (<span class="type">BYTE*</span>)<span class="var">baseAddr</span> + <span class="var">caveOff</span>, <span class="var">fullPatch</span>, <span class="fn">sizeof</span>(<span class="var">fullPatch</span>), <span class="kw">nullptr</span>);
+</div>
+
+<p>After our optimized SIMD code executes, we jump back to the original function. The game continues execution exactly where it would have been after the matrix construction, but with 
+the over-engineered SIMD code removed.</p>
+
+<h3 id="executing-our-hook"><strong>Executing our hook</strong></h3>
+
+<p>Cheat Engine’s disassembly confirms that our hook was successfully written:</p>
+
+<p><img src="/ViewProj-Blog/assets/images/part-4.5/ce_hook_showcase.png" alt="ESP-Image1" /></p>
+
+<p>And our custom payload is seen in the code cave:</p>
+
+<p><img src="/ViewProj-Blog/assets/images/part-4.5/ce_codecave_showcase.png" alt="ESP-Image1" /></p>
+
+<h3 id="observations-in-game-and-memory">Observations in game and memory:</h3>
+
+<p>With the hook active, the game runs normally, no crashes, no artifacting. This validates our assumption that the stripped-out 
+SIMD instructions were truly redundant and removing them only avoided a tiny bit of wasted work:</p>
+
+<p><strong>Matrix values remain identical with or without the hook</strong>
+<img src="/ViewProj-Blog/assets/images/part-4.5/matrix_comp.png" alt="ESP-Image1" /></p>
+
+<p><strong>In-Game Observation</strong>
+<img src="/ViewProj-Blog/assets/images/part-4.5/game_runs.gif" alt="ESP-Image1" /></p>
+
+<blockquote>
+  <p>While not strictly redundant (the instructions still contribute to the final result), this sequence is clearly overengineered. 
+The same output could be achieved with far fewer operations, which is why we treat them as ‘redundant’ for the purpose of optimization.</p>
+</blockquote>
+
+<p><em>The performance gain here is so minuscule you’d honestly get more FPS by closing a calculator app running in the background. But it teaches a 
+bigger lesson: systems don’t always do things the cleanest way, and compilers sure as hell aren’t infallible. Do not blindly trust compilers!</em></p>
+
+
+  </div><a class="u-url" href="/ViewProj-Blog/part-4.5-detour-hooking-simd-operations/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/ViewProj-Blog/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Reversing The ViewProjection Matrix</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">z1rp</li><li><a class="u-email" href="mailto:Zer0_1rp@proton.me">Zer0_1rp@proton.me</a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Reverse Engineering the ViewProjection Pipeline in Ghost of Tsushima</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>
+

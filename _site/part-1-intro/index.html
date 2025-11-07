@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Part 1: Introduction | Reversing The ViewProjection Matrix</title>
+<meta name="generator" content="Jekyll v4.4.1" />
+<meta property="og:title" content="Part 1: Introduction" />
+<meta name="author" content="z1rp" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="⚠️ Disclaimer: The content on this blog is provided for educational and informational purposes only. I do not encourage, endorse, or support any illegal activity. Any techniques, tools, or concepts discussed are intended solely for learning, research, defensive security, or experimentation in safe, legal environments. Use this information responsibly and at your own risk. The author is not responsible for any misuse or legal consequences that may result from applying what’s written here." />
+<meta property="og:description" content="⚠️ Disclaimer: The content on this blog is provided for educational and informational purposes only. I do not encourage, endorse, or support any illegal activity. Any techniques, tools, or concepts discussed are intended solely for learning, research, defensive security, or experimentation in safe, legal environments. Use this information responsibly and at your own risk. The author is not responsible for any misuse or legal consequences that may result from applying what’s written here." />
+<link rel="canonical" href="http://localhost:4000/ViewProj-Blog/part-1-intro/" />
+<meta property="og:url" content="http://localhost:4000/ViewProj-Blog/part-1-intro/" />
+<meta property="og:site_name" content="Reversing The ViewProjection Matrix" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2025-07-17T00:00:00+05:30" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Part 1: Introduction" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"z1rp"},"dateModified":"2025-07-17T00:00:00+05:30","datePublished":"2025-07-17T00:00:00+05:30","description":"⚠️ Disclaimer: The content on this blog is provided for educational and informational purposes only. I do not encourage, endorse, or support any illegal activity. Any techniques, tools, or concepts discussed are intended solely for learning, research, defensive security, or experimentation in safe, legal environments. Use this information responsibly and at your own risk. The author is not responsible for any misuse or legal consequences that may result from applying what’s written here.","headline":"Part 1: Introduction","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/ViewProj-Blog/part-1-intro/"},"url":"http://localhost:4000/ViewProj-Blog/part-1-intro/"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/ViewProj-Blog/assets/css/style.css">
+  <link rel="stylesheet" href="/ViewProj-Blog/assets/css/syntax.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/ViewProj-Blog/feed.xml" title="Reversing The ViewProjection Matrix" /></head>
+<!-- ✅ MathJax setup -->
+  <script>
+    MathJax = {
+      tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <!-- ✅ End MathJax setup -->
+
+  <body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/ViewProj-Blog/">Reversing The ViewProjection Matrix</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/ViewProj-Blog/">Index</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Part 1: Introduction</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2025-07-17T00:00:00+05:30" itemprop="datePublished">Jul 17, 2025
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <h3 id="️-disclaimer">⚠️ Disclaimer:</h3>
+<p>The content on this blog is provided for educational and informational purposes only. I do not encourage, endorse, or support any illegal activity. 
+Any techniques, tools, or concepts discussed are intended solely for learning, research, defensive security, or experimentation in safe, legal 
+environments. Use this information responsibly and at your own risk. The author is not responsible for any misuse or legal consequences that may 
+result from applying what’s written here.</p>
+
+<h3 id="how-this-rabbit-hole-started"><strong>How This Rabbit Hole Started:</strong></h3>
+
+<p>It all began when I was messing around with Ghost of Tsushima, trying to locate the View-Projection matrix to build a working world-to-screen (W2S) function. I eventually found it 
+and it worked as intended. But while digging through memory, I came across several other interesting matrices. Two of them stood out: the Camera World Matrix and the Perspective 
+Projection Matrix. I figured I could reconstruct the View-Projection matrix myself by multiplying the projection matrix with the inverse of the camera world matrix as most graphics 
+pipelines do. But the result didn’t match the actual View-Projection matrix.
+Curious, I started tracing the functions that write to the View-Projection matrix using IDA Pro, ReClass, and Cheat Engine. That’s when I discovered the engine was building 
+the matrix in a non-standard way, or at least, a way that was unfamiliar to me and different from the basic graphics pipeline I was expecting.</p>
+
+<h3 id="prerequisites"><strong>Prerequisites</strong></h3>
+<ul>
+  <li>Understanding the assembly language (x86-64)</li>
+  <li>Basic Reverse Engineering Skills</li>
+  <li>Intermediate knowledge in C++</li>
+  <li>Windows API Familiarity</li>
+  <li>Linear algebra
+    <blockquote>
+      <p>I assume you already understand the linear-algebra concepts used throughout: vectors, matrices (4×4), homogeneous coordinates (Vec4(x,y,z,1)), dot/cross products, matrix × vector, and the perspective divide</p>
+    </blockquote>
+  </li>
+</ul>
+
+<h3 id="what-are-we-trying-to-achieve"><strong>What Are we Trying to achieve?</strong></h3>
+
+<p>In this write-up series, we’re going to reverse engineer how <em>Ghost of Tsushima</em> constructs its <strong>View-Projection matrix</strong>, the thing that turns 3D world positions into 2D screen 
+coordinates. This is super important for stuff like ESP overlays (you can’t draw a box around an enemy if you don’t know where they are on screen).</p>
+
+<p>We’ll be reverse engineering the game’s rendering pipeline using tools like IDA Pro, breaking down how the View-Projection matrix is built step by step including all the weird 
+SIMD instructions it uses. The goal is to figure out where it’s stored, how it’s constructed, and how it’s used in the game.</p>
+
+<h3 id="what-is-an-esp"><strong>What is an ESP?</strong></h3>
+
+<p>ESP stands for <em>Extra-Sensory Perception</em>. In game hacking, it refers to any feature that shows you information you normally wouldn’t be able to see, stuff the game doesn’t intend to show.
+For example, an ESP might let you:</p>
+<ul>
+  <li>See players through walls</li>
+  <li>Know their exact health</li>
+  <li>Track what’s in their inventory</li>
+  <li>Spot hidden loot, traps etc…</li>
+</ul>
+
+<p>This gives a huge unfair advantage over others.</p>
+
+<h3 id="write-up-outline"><strong>Write-Up Outline:</strong></h3>
+
+<ul>
+  <li><strong><a href="../part-1-intro/">Part 1: Introduction</a></strong>
+    <ul>
+      <li><a href="../part-1-intro/#how-this-rabbit-hole-started">How This Rabbit Hole Started</a></li>
+      <li><a href="../part-1-intro/#prerequisites">Prerequisites</a></li>
+      <li><a href="../part-1-intro/#what-are-we-trying-to-achieve">What Are we Trying to achieve?</a></li>
+      <li><a href="../part-1-intro/#what-is-an-esp">What is an ESP?</a></li>
+    </ul>
+  </li>
+  <li><strong><a href="../part-2.1-view-matrix/">Part 2.1: View Matrix</a></strong>
+    <ul>
+      <li><a href="../part-2.1-view-matrix/#introduction">Introduction</a></li>
+      <li><a href="../part-2.1-view-matrix/#camera-world-matrix">Camera World Matrix</a></li>
+      <li><a href="../part-2.1-view-matrix/#what-is-a-view-matrix">What is a View-Matrix?</a></li>
+      <li><a href="../part-2.1-view-matrix/#layout-of-the-view-matrix">Layout Of the View Matrix</a></li>
+      <li><a href="../part-2.1-view-matrix/#breaking-down-the-view-matrix-vectors">Breaking Down the View Matrix Vectors</a></li>
+      <li><a href="../part-2.1-view-matrix/#orthogonality-and-relations--optionalgood-to-know">Orthogonality and Relations:- (Optional / Good to know)</a></li>
+      <li><a href="../part-2.1-view-matrix/#model-matrix--optionalgood-to-know">Model Matrix (Optional / Good to know)</a></li>
+    </ul>
+  </li>
+  <li><strong><a href="../part-2.2-projection-matrix/">Part 2.2: Projection Matrix</a></strong>
+    <ul>
+      <li><a href="../part-2.2-projection-matrix/#what-is-the-projection-matrix">What is the Projection Matrix?</a></li>
+      <li><a href="../part-2.2-projection-matrix/#what-the-projection-matrix-does">What the Projection Matrix Does</a></li>
+      <li><a href="../part-2.2-projection-matrix/#layout-of-the-perspective-projection-matrix">Layout of the Perspective Projection Matrix</a></li>
+      <li><a href="../part-2.2-projection-matrix/#what-is-reverse-z">What is Reverse Z?</a></li>
+    </ul>
+  </li>
+  <li><strong><a href="../part-2.3-View-Projection-matrix/">Part 2.3: View Projection Matrix</a></strong>
+    <ul>
+      <li><a href="../part-2.3-View-Projection-matrix/#what-is-the-view-projection-matrix">What is the View-Projection Matrix?</a></li>
+    </ul>
+  </li>
+  <li><strong><a href="../part-3-finding-and-reversing-matrices/">Part 3: Finding &amp; Reversing Matrices</a></strong>
+    <ul>
+      <li><a href="../part-3-finding-and-reversing-matrices/#how-we-search-for-matrices-in-memory">How We Search for Matrices in Memory</a></li>
+      <li><a href="../part-3-finding-and-reversing-matrices/#searching-for-matrices-in-ghost-of-tsushima">Searching for Matrices in Ghost of Tsushima</a></li>
+      <li><a href="../part-3-finding-and-reversing-matrices/#confirmation-of-the-view-and-camera-world-matrices">Confirmation of the View and Camera World Matrices</a></li>
+      <li><a href="../part-3-finding-and-reversing-matrices/#looking-at-other-matrices">Looking at other matrices (Projection, VP etc)</a></li>
+      <li><a href="../part-3-finding-and-reversing-matrices/#other-ways-to-get-the-vp-matrix">Other ways to get the VP matrix</a></li>
+      <li><a href="../part-3-finding-and-reversing-matrices/#trying-to-rebuild-the-view-projection-matrix">Trying to Rebuild the View-Projection Matrix</a></li>
+    </ul>
+  </li>
+  <li><strong><a href="../part-4.1-tracing-matrix-construction/">Part 4.1: Tracing the Matrix Construction Path</a></strong>
+    <ul>
+      <li><a href="../part-4.1-tracing-matrix-construction/#tracing-functions-writing-to-the-view-projection-matrix">Tracing Functions Writing to The View-Projection Matrix</a></li>
+      <li><a href="../part-4.1-tracing-matrix-construction/#windows-calling-conventions-abi">Windows Calling Conventions (ABI)</a></li>
+      <li><a href="../part-4.1-tracing-matrix-construction/#breakpoint--stacktrace">BreakPoints, Stacktrace etc</a></li>
+      <li><a href="../part-4.1-tracing-matrix-construction/#ida-code">Looking at functions in IDA PRO</a></li>
+      <li><a href="../part-4.1-tracing-matrix-construction/#why-not-just-invert-it">View Matrix Recovery through Matrix Algebra</a></li>
+    </ul>
+  </li>
+  <li><strong><a href="../part-4.2-reversing-simd-instrustions/">Part 4.2: Reversing SIMD Instructions for Matrix Math</a></strong>
+    <ul>
+      <li><a href="../part-4.2-reversing-simd-instrustions/#reversing-simd-instructions">Reversing SIMD instructions</a></li>
+      <li><a href="../part-4.2-reversing-simd-instrustions/#masking-out-w-with-simd-theory">Masking Out w with SIMD (Theory)</a></li>
+      <li><a href="../part-4.2-reversing-simd-instrustions/#_mm_shuffle_ps-theory">_mm_shuffle_ps (Theory)</a></li>
+      <li><a href="../part-4.2-reversing-simd-instrustions/#negating-a-vector-with-simd-theory">Negating a Vector with SIMD (Theory)</a></li>
+      <li><a href="../part-4.2-reversing-simd-instrustions/#mm_unpack-theory">_mm_unpack (Theory)</a></li>
+      <li><a href="../part-4.2-reversing-simd-instrustions/#transposing-and-shuffling-intermediate-vectors-theory">Transposing and Shuffling Intermediate Vectors (Theory)</a></li>
+      <li><a href="../part-4.2-reversing-simd-instrustions/#manual-matrix-reconstruction-from-simd-operations-example">Manual Matrix Reconstruction from SIMD Operations (Example)</a></li>
+      <li><a href="../part-4.2-reversing-simd-instrustions/#simd-based-vec4--4x4-matrix-multiplication-theory">SIMD-Based Vec4 × 4x4 Matrix Multiplication (Theory)</a></li>
+      <li><a href="../part-4.2-reversing-simd-instrustions/#comparing-constructed-matrix-with-camera-world-matrix">Comparing Constructed Matrix with Camera World Matrix:</a></li>
+      <li><a href="../part-4.2-reversing-simd-instrustions/#fast-inverse-for-orthonormal-matrices">Fast inverse for orthonormal Matrices</a></li>
+      <li><a href="../part-4.2-reversing-simd-instrustions/#continuaton-of-manual-matrix-reconstruction-example">Continuation of Manual Matrix Reconstruction (Example)</a></li>
+      <li><a href="../part-4.2-reversing-simd-instrustions/#confirmation-of-vp-matrix">Confirmation Of VP Matrix from Manual Construction</a></li>
+    </ul>
+  </li>
+  <li><strong><a href="../part-4.3-completing-view-proj-matrix/">Part 4.3: Completing the View-Projection Matrix</a></strong>
+    <ul>
+      <li><a href="../part-4.3-completing-view-proj-matrix/#matrix-loading-into-memory">Matrix Loading into Memory</a></li>
+      <li><a href="../part-4.3-completing-view-proj-matrix/#making-sense">Making sense</a></li>
+      <li><a href="../part-4.3-completing-view-proj-matrix/#another-redundant-simd-math-function">Many Redundant SIMD math functions</a></li>
+      <li><a href="../part-4.3-completing-view-proj-matrix/#negated-camera-position-multiplication-with-viewprojection-matrix">Negated Camera position Multiplication with View-Projection Matrix</a></li>
+      <li><a href="../part-4.3-completing-view-proj-matrix/#even-more-redundant-simd-operations">Even More redundant SIMD operations</a></li>
+      <li><a href="../part-4.3-completing-view-proj-matrix/#biggest-reduction-in-simd-operations">Biggest reduction in SIMD operations</a></li>
+      <li><a href="../part-4.3-completing-view-proj-matrix/#continuaton-of-manual-matrix-reconstruction">Continuation of Manual Matrix Reconstruction</a></li>
+      <li><a href="../part-4.3-completing-view-proj-matrix/#the-viewprojection-matrix---fully-reversed">The View-Projection Matrix - Fully Reversed</a></li>
+      <li><a href="../part-4.3-completing-view-proj-matrix/#final-verification">Final Verification</a></li>
+      <li><a href="../part-4.3-completing-view-proj-matrix/#camera-world-matrix-does-not-match">Camera World Matrix Does Not Match?</a></li>
+      <li><a href="../part-4.3-completing-view-proj-matrix/#completion-of-vp-matrix-construction-from-simd-operations">Completion of VP matrix construction from SIMD operations</a></li>
+    </ul>
+  </li>
+  <li><strong><a href="../part-4.4-optimizing-redundant-simd-instructions/">Part 4.4: Optimizing Redundant SIMD Instructions</a></strong>
+    <ul>
+      <li><a href="../part-4.4-optimizing-redundant-simd-instructions/#finding-assembly-responsible-for-this-function">Finding Assembly responsible for this function</a></li>
+      <li><a href="../part-4.4-optimizing-redundant-simd-instructions/#nopping-instructions">Nopping Instructions</a></li>
+      <li><a href="../part-4.4-optimizing-redundant-simd-instructions/#result">Result of game running smoothly</a></li>
+    </ul>
+  </li>
+  <li><strong><a href="../part-4.5-detour-hooking-simd-operations/">Part 4.5: Detour Hooking to Optimize SIMD Operations</a></strong>
+    <ul>
+      <li><a href="../part-4.5-detour-hooking-simd-operations/#what-is-detour-hooking">What is detour Hooking?</a></li>
+      <li><a href="../part-4.5-detour-hooking-simd-operations/#heres-the-approach">The approach</a></li>
+      <li><a href="../part-4.5-detour-hooking-simd-operations/#5-byte-jmp-hook-vs-13-byte-jmp-hook">5 Byte jmp hook vs 13 Byte jmp hook</a></li>
+      <li><a href="../part-4.5-detour-hooking-simd-operations/#writing-our-hook">Writing our hook</a></li>
+      <li><a href="../part-4.5-detour-hooking-simd-operations/#code-explanation">Code Explanation:</a></li>
+      <li><a href="../part-4.5-detour-hooking-simd-operations/#executing-our-hook">Executing our hook</a></li>
+      <li><a href="../part-4.5-detour-hooking-simd-operations/#observations-in-game-and-memory">Observations in game and memory</a></li>
+    </ul>
+  </li>
+  <li><strong><a href="../part-5-trampoline-hooking/">Part 5: Trampoline Hooking to Capture Entity Positions</a></strong>
+    <ul>
+      <li><a href="../part-5-trampoline-hooking/#what-is-trampoline-hooking">What is Trampoline Hooking?</a></li>
+      <li><a href="../part-5-trampoline-hooking/#the-plan">The Plan</a></li>
+      <li><a href="../part-5-trampoline-hooking/#the-hook">The Hook</a></li>
+      <li><a href="../part-5-trampoline-hooking/#setting-up-memory-for-the-trampoline">Setting Up Memory for the Trampoline</a></li>
+      <li><a href="../part-5-trampoline-hooking/#hooking-the-z-axis-instruction">Hooking the Z-Axis Instruction</a></li>
+      <li><a href="../part-5-trampoline-hooking/#writing-the-trampoline">Writing the Trampoline</a></li>
+      <li><a href="../part-5-trampoline-hooking/#capturing--storing-entities">Capturing &amp; Storing Entities</a></li>
+    </ul>
+  </li>
+  <li><strong><a href="../part-6-w2s/">Part 6: World To Screen Explanation And Code</a></strong>
+    <ul>
+      <li><a href="../part-6-w2s/#what-world-to-screen-means">What “World to Screen” Means</a></li>
+      <li><a href="../part-6-w2s/#world-to-screen-code-explanation">World to Screen Code Explanation</a>
+        <ul>
+          <li><a href="../part-6-w2s/../part-6-w2s/#world-space--clip-space">World Space → Clip Space</a></li>
+          <li><a href="../part-6-w2s/../part-6-w2s/#clip-check">Clip Check</a></li>
+          <li><a href="../part-6-w2s/../part-6-w2s/#clip-space--ndc">Clip Space → NDC</a></li>
+          <li><a href="../part-6-w2s/../part-6-w2s/#ndc--screen-space">NDC → Screen Space</a></li>
+        </ul>
+      </li>
+      <li><a href="../part-6-w2s/#summary-of-the-transformation-pipeline">Summary of the Transformation Pipeline</a></li>
+      <li><a href="../part-6-w2s/#tldr-of-w2s">TL;DR of w2s</a></li>
+    </ul>
+  </li>
+  <li><strong><a href="../part-7-final-esp/">Part 7: Final ESP with ImGui</a></strong>
+    <ul>
+      <li><a href="../part-7-final-esp/#introduction">Introduction</a></li>
+      <li><a href="../part-7-final-esp/#code-explanation">Entire Code Explanation</a>
+        <ul>
+          <li>Step 1: Reading Entities and Their Data</li>
+          <li>Step 2: Filtering Unique and Relevant Entities</li>
+          <li>Step 3: Toggle ESP</li>
+          <li>Step 4: Loop Through Entities and Get Screen Positions</li>
+          <li>Step 5: Drawing Snaplines Using ImGui</li>
+          <li>TL;DR of the Code Flow</li>
+        </ul>
+      </li>
+      <li><a href="../part-7-final-esp/#closing-thoughts">Closing Thoughts</a></li>
+    </ul>
+  </li>
+</ul>
+
+<p><strong>What it should look like:</strong></p>
+
+<h2><img src="/ViewProj-Blog/assets/images/part-1/GotEsp-1.png" alt="ESP-Image1" /></h2>
+<p><img src="/ViewProj-Blog/assets/images/part-1/GotEsp-2.png" alt="ESP-Image2" /></p>
+
+<p>Snippets of what we will be working with:</p>
+
+<p><strong>IDA PRO:</strong>
+<img src="/ViewProj-Blog/assets/images/part-1/ida-view.png" alt="IDA-screenshot" /></p>
+
+<p><strong>Cheat Engine:</strong>
+<img src="/ViewProj-Blog/assets/images/part-1/CheatEngine-view.png" alt="CheatEngine-screenshot" /></p>
+
+<p><strong>Visual Studio:</strong>
+<img src="/ViewProj-Blog/assets/images/part-1/VisualStudio-view.png" alt="VisualStudio-screenshot" /></p>
+
+<p><strong>Reclass:</strong>
+<img src="/ViewProj-Blog/assets/images/part-1/Reclass-view.png" alt="Reclass-screenshot" /></p>
+
+<p>This blog series is just me sharing what I’ve figured out so far while reverse engineering <em>Ghost of Tsushima</em>. There’s always more to understand, and I’m sure some things I say might not be 100% perfect, so if you spot something I missed, or you have better insights, I’d really love to hear from you.</p>
+
+<p>Feel free to reach out to me:</p>
+<ul>
+  <li>Discord: z1rp#1337</li>
+  <li>Email: <a href="mailto:Zer0_1rp@proton.me">Zer0_1rp@proton.me</a></li>
+</ul>
+
+  </div><a class="u-url" href="/ViewProj-Blog/part-1-intro/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/ViewProj-Blog/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Reversing The ViewProjection Matrix</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">z1rp</li><li><a class="u-email" href="mailto:Zer0_1rp@proton.me">Zer0_1rp@proton.me</a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Reverse Engineering the ViewProjection Pipeline in Ghost of Tsushima</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>
+

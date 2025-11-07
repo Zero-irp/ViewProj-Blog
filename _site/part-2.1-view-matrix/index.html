@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Part 2.1: View Matrix | Reversing The ViewProjection Matrix</title>
+<meta name="generator" content="Jekyll v4.4.1" />
+<meta property="og:title" content="Part 2.1: View Matrix" />
+<meta name="author" content="z1rp" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Introduction" />
+<meta property="og:description" content="Introduction" />
+<link rel="canonical" href="http://localhost:4000/ViewProj-Blog/part-2.1-view-matrix/" />
+<meta property="og:url" content="http://localhost:4000/ViewProj-Blog/part-2.1-view-matrix/" />
+<meta property="og:site_name" content="Reversing The ViewProjection Matrix" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2025-07-17T00:00:00+05:30" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Part 2.1: View Matrix" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"z1rp"},"dateModified":"2025-07-17T00:00:00+05:30","datePublished":"2025-07-17T00:00:00+05:30","description":"Introduction","headline":"Part 2.1: View Matrix","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/ViewProj-Blog/part-2.1-view-matrix/"},"url":"http://localhost:4000/ViewProj-Blog/part-2.1-view-matrix/"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/ViewProj-Blog/assets/css/style.css">
+  <link rel="stylesheet" href="/ViewProj-Blog/assets/css/syntax.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/ViewProj-Blog/feed.xml" title="Reversing The ViewProjection Matrix" /></head>
+<!-- ✅ MathJax setup -->
+  <script>
+    MathJax = {
+      tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <!-- ✅ End MathJax setup -->
+
+  <body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/ViewProj-Blog/">Reversing The ViewProjection Matrix</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/ViewProj-Blog/">Index</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Part 2.1: View Matrix</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2025-07-17T00:00:00+05:30" itemprop="datePublished">Jul 17, 2025
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <h3 id="introduction">Introduction</h3>
+
+<p>In 3D computer graphics, transformation matrices are the behind-the-scenes math that turns 3D world into something that actually 
+shows up on your 2D screen. Three particularly important matrices work together to take 3D world coordinates and transform them into 2D screen coordinates: the 
+View Matrix, Projection Matrix, and their combination, the View Projection Matrix</p>
+
+<h3 id="camera-world-matrix"><strong>Camera World Matrix</strong></h3>
+
+<p>Before jumping into the view matrix we first have to know about the camera world matrix and its relation with the view matrix
+(some people refer to it by different names, but I’ll just call it the <em>camera world matrix</em>)</p>
+
+<p>The camera world matrix is basically the camera’s own transform. It describes how the
+camera is oriented and positioned in world space</p>
+
+<p>It usually looks like this (in row-major form):</p>
+
+<table>
+  <tbody>
+    <tr>
+      <td>right.x</td>
+      <td>right.y</td>
+      <td>right.z</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <td>up.x</td>
+      <td>up.y</td>
+      <td>up.z</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <td>Forward.x</td>
+      <td>Forward.y</td>
+      <td>Forward.z</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <td>pos.x</td>
+      <td>pos.y</td>
+      <td>pos.z</td>
+      <td>1</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>Position Vector:
+The position of the camera ‘(x,y,z)’ in world space.</p>
+
+<p>we will discuss the right/up/forward vectors in the View Matrix segment and later how this layout differs from Ghost of Tsushima.</p>
+
+<h3 id="what-is-a-view-matrix"><strong>What is a View-Matrix?</strong></h3>
+
+<p>The <em>view matrix</em> is a 4x4 matrix that transforms coordinates from world space into view (or camera) space. It does <strong>not</strong> tell us where the camera is,
+that’s what the camera world matrix is for. Instead, the view matrix takes everything in the world and repositions it relative to the camera, 
+as if the camera is sitting at the origin (0, 0, 0) and looking straight down its forward axis.</p>
+
+<blockquote>
+  <p>world space -&gt; view space</p>
+</blockquote>
+
+<p>So in a sense, it’s not the camera that moves but it’s the world that shifts and rotates around the camera</p>
+
+<blockquote>
+  <p>The view matrix is just the inverse of the camera world matrix.<br />
+Since the camera world matrix places the camera in the world, its inverse effectively ‘un-places’ the world relative to the camera, resulting in the view matrix.</p>
+</blockquote>
+
+<hr />
+
+<h3 id="layout-of-the-view-matrix"><strong>Layout Of the View Matrix</strong></h3>
+
+<p>Here is a row-major, left-handed layout of how the <em>View Matrix</em> looks like</p>
+
+<table>
+  <tbody>
+    <tr>
+      <td>Right.x</td>
+      <td>Up.x</td>
+      <td>Forward.x</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <td>Right.y</td>
+      <td>Up.y</td>
+      <td>Forward.y</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <td>Right.z</td>
+      <td>Up.z</td>
+      <td>Forward.z</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <td>-dot(Right, Position)</td>
+      <td>-dot(Up, Position)</td>
+      <td>-dot(Forward, Position)</td>
+      <td>1</td>
+    </tr>
+  </tbody>
+</table>
+
+<blockquote>
+  <p>This layout isn’t a hard rule, it can change depending on things like whether the engine uses a right-handed or left handed coordinate system, whether it stores matrices in row-major or column-major order, or even custom layouts used for optimization. What matters is consistency: as long as the engine expects that specific layout, it will work. But no matter how it’s arranged, the matrix still needs the same essential components: Right, Up, Forward, and Translation.</p>
+</blockquote>
+
+<p>This 4x4 Matrix layout is common in DirectX Games where it is usually row-major and left-handed.<br />
+This <em>View Matrix</em> is made up of 4 fundamental vectors:</p>
+<ul>
+  <li><strong>Right Vector</strong>:  which direction is right from the camera’s perspective</li>
+  <li><strong>Up Vector</strong>: which direction is up from the camera’s perspective</li>
+  <li><strong>Forward Vector</strong>: which direction the camera is facing</li>
+  <li><strong>Translation Vector</strong>: where the camera is positioned in the world</li>
+</ul>
+
+<p>Before diving into the fundamental vectors, let’s take a moment to understand row vs. column major order and left- vs. right-handed coordinate systems:</p>
+
+<ul>
+  <li><strong>Row-Major</strong>:
+The matrix is constructed row by row.</li>
+  <li><strong>Column-Major</strong>:
+The Matrix is constructed column by column.</li>
+</ul>
+
+<blockquote>
+  <p>Eg: The right Vector would have occupied the first row in row-major Matrix but the first column in column-major Matrix.</p>
+</blockquote>
+
+<ul>
+  <li><strong>Left-Handedness:</strong>
++Z points into the screen.</li>
+  <li><strong>Right-Handedness:</strong>
++Z points out of the screen.</li>
+</ul>
+
+<blockquote>
+  <p>This is why in Right-Handed systems the forward Vector will be <em>negated</em>.</p>
+</blockquote>
+
+<h3 id="breaking-down-the-view-matrix-vectors"><strong>Breaking Down the View Matrix Vectors</strong></h3>
+
+<p>The Right, Up and Forward vectors in your matrix define the orientation of an object or camera in 3D space.</p>
+
+<p><strong>Right Vector (X-axis):</strong><br />
+The Right vector is a directional vector that points to the right-hand side of the camera in the camera’s local space.
+It Defines the camera’s local X-axis</p>
+
+<p><strong>Up Vector (Y-axis):</strong><br />
+This is also a directional Vector but points toward the top side of the camera. It points straight up from the camera’s perspective.
+It defines the camera’s local Y-axis</p>
+
+<p><strong>Forward Vector:</strong><br />
+This Vector points in the direction the camera is facing. (Where the camera is looking at)
+It defines the camera’s local Z-axis</p>
+<blockquote>
+  <p>The forward vector direction is typically (LookAtTarget - CameraPosition).normalized() for Left-Handed systems like Direct-X but some coordinate systems (like right-handed 
+view space where Z goes into the screen), the view matrix uses the negative Z-axis, which would be (CameraPosition - LookAtTarget).normalized().</p>
+</blockquote>
+
+<p>These variables (eg: Right.x or forward.y etc) can map from <em>-1</em> to <em>1</em> or <em>0</em> to <em>1</em> depending on the graphics Api used (eg: directx/OpenGL).</p>
+
+<p><strong>Translation Vector:</strong><br />
+This translation vector basically tells the view matrix how to undo the camera’s position and orientation so that the world moves around the camera and not the other way around.
+This is derived from a dot product between the orientation vectors and the camera’s position.
+In the view matrix, this position is negated to move the world around the camera.</p>
+
+<h3 id="orthogonality-and-relations--optionalgood-to-know"><strong>Orthogonality and Relations:- (Optional/Good to know)</strong></h3>
+
+<p>For a camera to behave properly in 3D space, its orientation vectors (Right, Up, Forward) must be orthogonal (Perpendicular) to each other. <br />
+In Vector Algebra we know 2 perpendicular vector’s dot product is always 0.</p>
+<blockquote>
+  <p>Thus:<br />
+dot(Right, Up) = 0<br />
+dot(Up, Forward) = 0<br />
+dot(Forward, Right) = 0</p>
+</blockquote>
+
+<p>In vector algebra, we also have the cross product and the right-hand rule, which states:  <br />
+The cross product of two vectors “A” and “B” results in a new vector (C = A x B). This resultant vector “C” is always perpendicular (orthogonal) 
+to both original vectors “A” and “B”.</p>
+<blockquote>
+  <p>Thus:<br />
+cross(Up, Right) = Forward<br />
+cross(Right, Forward) = Up<br />
+cross(Forward, Up) = Right<br />
+(For Left-Handed systems)</p>
+</blockquote>
+
+<p>This returns a new vector perpendicular to the two input vectors. This relationship ensures all three orientation axes form a proper 
+coordinate system</p>
+
+<h3 id="model-matrix--optionalgood-to-know"><strong>Model Matrix:- (Optional/Good to know)</strong></h3>
+
+<p>Before we move forward, it’s worth mentioning the Model Matrix<br />
+The Model Matrix is defined by an object’s position, rotation, and scale. It transforms the object’s vertices from their local model space into world space. The X,Y,Z coordinates of 
+these vertices are defined relative to the object’s center, This Matrix is responsible for transforming a 3D model from its local space into world space handling the model’s 
+position, rotation and scale.</p>
+
+<blockquote>
+  <p>Model space -&gt; World space</p>
+</blockquote>
+
+<p>For the purpose of world-to-screen projection (basic ESP overlay), we don’t actually need the model matrix.<br />
+<strong>Why?</strong><br />
+The esp we are building only needs to know where something is in world space and the game has already computed and placed the model in world space.
+Since the model matrix just moves the object from local space to world space, and we already have the world position, it becomes redundant in this
+context.<br />
+We don’t use this, but it’s worth knowing because the Camera World Matrix we discussed earlier is just a special case of a Model Matrix: it represents the 
+camera’s position and orientation in world space, just like a model matrix does for any object.</p>
+<blockquote>
+  <p>Quick Note:
+While a model matrix typically includes rotation, translation, and scale, the camera world matrix only includes rotation and translation.
+Structurally, they share the same layout, the camera world matrix is essentially a model matrix for the camera itself.</p>
+</blockquote>
+
+<p><strong>If you want to learn more about model, view and projection matrices you can check this OpenGL tutorial out:</strong><br />
+<a href="https://www.opengl-tutorial.org/beginners-tutorials/tutorial-3-matrices/#the-model-view-and-projection-matrices">OpenGL tutorial</a></p>
+
+<p><em>All of these mathematical relationships, spatial orientations, and foundational concepts might seem unnecessary but they are crucial. We’ll
+rely on this knowledge to accurately identify the different matrices in memory, decode how the game constructs them, and understand exactly
+how the camera views the world.</em></p>
+
+
+  </div><a class="u-url" href="/ViewProj-Blog/part-2.1-view-matrix/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/ViewProj-Blog/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Reversing The ViewProjection Matrix</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">z1rp</li><li><a class="u-email" href="mailto:Zer0_1rp@proton.me">Zer0_1rp@proton.me</a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Reverse Engineering the ViewProjection Pipeline in Ghost of Tsushima</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>
+

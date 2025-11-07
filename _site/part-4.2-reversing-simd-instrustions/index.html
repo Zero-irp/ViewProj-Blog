@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Part 4.2: Reversing SIMD Instructions for Matrix Math | Reversing The ViewProjection Matrix</title>
+<meta name="generator" content="Jekyll v4.4.1" />
+<meta property="og:title" content="Part 4.2: Reversing SIMD Instructions for Matrix Math" />
+<meta name="author" content="z1rp" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Reverse Engineering the ViewProjection Pipeline in Ghost of Tsushima" />
+<meta property="og:description" content="Reverse Engineering the ViewProjection Pipeline in Ghost of Tsushima" />
+<link rel="canonical" href="http://localhost:4000/ViewProj-Blog/part-4.2-reversing-simd-instrustions/" />
+<meta property="og:url" content="http://localhost:4000/ViewProj-Blog/part-4.2-reversing-simd-instrustions/" />
+<meta property="og:site_name" content="Reversing The ViewProjection Matrix" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2025-07-17T00:00:00+05:30" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Part 4.2: Reversing SIMD Instructions for Matrix Math" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"z1rp"},"dateModified":"2025-07-17T00:00:00+05:30","datePublished":"2025-07-17T00:00:00+05:30","description":"Reverse Engineering the ViewProjection Pipeline in Ghost of Tsushima","headline":"Part 4.2: Reversing SIMD Instructions for Matrix Math","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/ViewProj-Blog/part-4.2-reversing-simd-instrustions/"},"url":"http://localhost:4000/ViewProj-Blog/part-4.2-reversing-simd-instrustions/"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/ViewProj-Blog/assets/css/style.css">
+  <link rel="stylesheet" href="/ViewProj-Blog/assets/css/syntax.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/ViewProj-Blog/feed.xml" title="Reversing The ViewProjection Matrix" /></head>
+<!-- ✅ MathJax setup -->
+  <script>
+    MathJax = {
+      tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <!-- ✅ End MathJax setup -->
+
+  <body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/ViewProj-Blog/">Reversing The ViewProjection Matrix</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/ViewProj-Blog/">Index</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Part 4.2: Reversing SIMD Instructions for Matrix Math</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2025-07-17T00:00:00+05:30" itemprop="datePublished">Jul 17, 2025
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <style>
+.ida-code{
+  background:#1e1e1e;
+  color:#dcdcdc;
+  padding:12px;
+  border-radius:8px;
+  font-family: Consolas, "Liberation Mono", Menlo, monospace;
+  font-size:14px;
+  line-height:1.4;
+  overflow-x:auto;
+  white-space: pre; /* preserve spaces and linebreaks */
+}
+
+/* token classes you can use inside the div */
+.ida-code .kw    { color:#569cd6; } /* keywords */
+.ida-code .type  { color:#4ec9b0; } /* types */
+.ida-code .fn    { color:#dcdcaa; } /* functions / intrinsics */
+.ida-code .num   { color:#b5cea8; } /* numbers / hex */
+.ida-code .var   { color:#9cdcfe; } /* variables */
+.ida-code .const { color:#ce9178; } /* globals / constants */
+.ida-code .comment{ color:#6a9955; font-style:italic; }
+</style>
+
+<h3 id="️-note-for-readers">⚠️ Note for readers:</h3>
+<p>This post is meant for intermediate to advanced readers who want to understand how low-level SIMD instructions are 
+used in real-world graphics code (like game engines).<br />
+That said, I’ve done my best to break things down step-by-step, even if you’re still learning, I hope parts of it are still approachable.</p>
+
+<h3 id="reversing-simd-instructions">Reversing SIMD instructions</h3>
+
+<p>Let’s start by dissecting the instructions in sub_7FD060 which we will rename to “ProjXViewMul” and rename the camera world matrix and 
+projection matrix accessed in this function as CamWorldMat and ProjMat respectively and a1 as camStruct.</p>
+
+<p><img src="/ViewProj-Blog/assets/images/part-4.2/ida-view-1.png" alt="ESP-Image1" /></p>
+
+<h2 id="masking-out-w-with-simd-theory">Masking Out w with SIMD (Theory)</h2>
+
+<p>Let’s start with the first explanation of the SIMD instruction.<br />
+The bitmask used in the instruction:</p>
+
+<div class="ida-code"><span class="var">CamWorldMat_2</span> = <span class="fn">_mm_and_ps</span>((<span class="type">__m128</span>)<span class="const">xmmword_1138D50</span>, *(<span class="type">__m128</span> *)(<span class="var">camStruct</span> + <span class="num">0x160</span>));
+</div>
+
+<p>relies on a clever use of NaN values as a bitmask.<br />
+xmmword_1138D50 is a static memory address that holds four 32-bit floats:<br />
+(NaN, NaN, NaN, 0.0f)</p>
+
+<p>Here <strong>specfically</strong> ‘NaN’ refer to a 32 bit value where all bits are flipped to 1.<br />
+<img src="/ViewProj-Blog/assets/images/part-4.2/ieee-float-binary.png" alt="ESP-Image1" /></p>
+<blockquote>
+  <p>NaN doesn’t literally mean “all bits 1” (0xFFFFFFFF), that’s one specific payload of NaN</p>
+</blockquote>
+
+<p>As shown above:</p>
+
+<ul>
+  <li>Exponent bits are all 1s</li>
+  <li>Mantissa bits are non-zero</li>
+  <li>Resulting value is NaN, but its binary pattern is ‘11111111111111111111111111111111’</li>
+</ul>
+
+<p>So, when _mm_and_ps() uses (NaN, NaN, NaN, 0.0f):</p>
+
+<ul>
+  <li>NaN &amp; X,Y,Z = X,Y,Z (because all bits are 1 → preserves input)</li>
+  <li>0.0f &amp; W = 0 (because all bits are 0 → clears input)</li>
+</ul>
+
+<p>Doing this, the bitwise AND preserve x/y/z while zeroing out w.</p>
+
+<h4 id="next-simd-instruction"><em>Next SIMD instruction.</em></h4>
+
+<div class="ida-code">  <span class="var">CamWorldMat_3_camPos</span> = <span class="fn">_mm_shuffle_ps</span>(
+         		    *(<span class="type">__m128</span> *)(<span class="var">camStruct</span> + <span class="num">0x170</span>),
+         		    <span class="fn">_mm_shuffle_ps</span>((<span class="type">__m128</span>)<span class="const">xmmword_10F0E70</span>, *(<span class="type">__m128</span> *)(<span class="var">camStruct</span> + <span class="num">0x170</span>), <span class="num">0xA0</span>),
+         		    <span class="num">0x24</span>);
+</div>
+
+<h2 id="_mm_shuffle_ps-theory">_mm_shuffle_ps (Theory)</h2>
+
+<p>Let’s begin with the explanation of the _mm_shuffle_ps function:</p>
+
+<div class="ida-code"><span class="type">__m128</span> <span class="fn">_mm_shuffle_ps</span>(<span class="type">__m128</span> <span class="var">a</span>, <span class="type">__m128</span> <span class="var">b</span>, <span style="color: #e74c3c;">const int</span> <span class="var">imm8</span>);
+</div>
+
+<p>Let’s break down _mm_shuffle_ps. It takes two __m128 vectors (a and b) and an 8-bit immediate (imm8) that decides how the elements from 
+a and b get shuffled into the output.<br />
+Let’s denote the result as c. The output vector c is constructed as follows:</p>
+
+<ul>
+  <li>c[0] → element from ‘a’ selected by the lowest two bits of imm8</li>
+  <li>c[1] → element from ‘a’ selected by bits 2–3 of imm8</li>
+  <li>c[2] → element from ‘b’ selected by bits 4–5 of imm8</li>
+  <li>c[3] → element from ‘b’ selected by bits 6–7 of imm8</li>
+</ul>
+
+<p>In short, the immediate value controls which elements from a and b are placed into each position of the result.</p>
+
+<h2 id="_mm_shuffle_ps-example">_mm_shuffle_ps (Example)</h2>
+
+<p>Now let’s walk through and understand a nested _mm_shuffle_ps instruction. Lets start with:</p>
+
+<div class="ida-code"><span class="fn">_mm_shuffle_ps</span>((<span class="type">__m128</span>)<span class="const">xmmword_10F0E70</span>, *(<span class="type">__m128</span> *)(<span class="var">camStruct</span> + <span class="num">0x170</span>), <span class="num">0xA0</span>)
+</div>
+
+<p>xmmword_10F0E70 is a static memory address that holds four 32-bit floats:<br />
+(1.0f, 1.0f, 1.0f, 1.0f)<br />
+*(__m128 *)(camStruct + 0x170) is the camera position:<br />
+(-112913.16f, -613576.88f, 2234.39f, 1.0f)<br />
+The immediate value 0xA0 (in binary 10100000) tells us how to shuffle the inputs. <br />
+so output ‘c’ is:</p>
+<ul>
+  <li>c[0] -&gt; a[00] , 1.0f</li>
+  <li>c[1] -&gt; a[00] , 1.0f</li>
+  <li>c[2] -&gt; b[10] , 2234.39f</li>
+  <li>c[3] -&gt; b[10] , 2234.39f</li>
+</ul>
+
+<p>In the other shuffle intrinsic is:</p>
+
+<div class="ida-code"><span class="fn">_mm_shuffle_ps</span>(*(<span class="type">__m128</span> *)(<span class="var">camStruct</span> + <span class="num">0x170</span>), '<span class="var">c</span>', <span class="num">0x24</span>)
+</div>
+
+<p>0x24 in hex is: 00100100<br />
+The final output will be:</p>
+
+<ul>
+  <li>CamWorldMat_3[0] -&gt; (camStruct + 0x170)[00] , -112913.16f</li>
+  <li>CamWorldMat_3[1] -&gt; (camStruct + 0x170)[01] , -613576.88f</li>
+  <li>CamWorldMat_3[2] -&gt; c[10] , 2234.39f</li>
+  <li>CamWorldMat_3[3] -&gt; c[00] , 1.0f</li>
+</ul>
+
+<p>This just seems to give the same vec4. Effectively being CamWorldMat_3 = *(__m128 *)(camStruct + 0x170)</p>
+
+<blockquote>
+  <p>I honestly have no idea why the developers chose to perform these shuffle operations when the final result is already 
+available in memory at camStruct + 0x170. Could be due to legacy code, a byproduct of compiler optimizations, or perhaps a more 
+general-purpose function that handles multiple cases in production. 
+As reverse engineers, we often run into code that appears redundant or overly complex until seen the bigger picture. 
+While it’s tempting to assume we fully understand the intention behind every instruction, sometimes the best approach 
+is to acknowledge what we don’t know and document it and move forward.</p>
+</blockquote>
+
+<h3 id="negating-a-vector-with-simd-theory">Negating a Vector with SIMD (Theory)</h3>
+
+<div class="ida-code"><span class="var">CamWorldMat_1_negated</span> = <span class="fn">_mm_sub_ps</span>((<span class="type">__m128</span>)<span class="num">0LL</span>, <span class="fn">_mm_and_ps</span>((<span class="type">__m128</span>)<span class="const">xmmword_1138D50</span>, *(<span class="type">__m128</span> *)(<span class="var">camStruct</span> + <span class="num">0x150</span>)));
+</div>
+
+<p>The constant xmmword_1138D50 once again holds the values (NaN, NaN, NaN, 0.0f), and is used here as a bitmask just like before.</p>
+
+<div class="ida-code"><span class="fn">_mm_sub_ps</span>((<span class="type">__m128</span>)<span class="num">0LL</span>, <span class="var">result_of_above</span>)
+</div>
+
+<ul>
+  <li>(__m128)0LL creates a 128-bit SIMD vector containing all zeros: (0.0f, 0.0f, 0.0f, 0.0f)</li>
+  <li>This Effectively does:
+    <ul>
+      <li>(0 - x, 0 - y, 0 - z, 0 - 0) → (-x, -y, -z, 0)</li>
+    </ul>
+  </li>
+</ul>
+
+<p>This SIMD instruction is simply a way to negate a 3D vector while keeping the W component cleared. In the context of a 4x4 camera world matrix 
+this is used to possibly convert <em>handedness</em>.</p>
+
+<h3 id="mm_unpack-theory">mm_unpack (Theory)</h3>
+
+<div class="ida-code"><span class="var">mergedHigh</span> = <span class="fn">_mm_unpackhi_ps</span>(<span class="var">CamWorldMat_1_negated</span>, <span class="var">CamWorldMat_2</span>);
+<span class="var">mergedLow</span> = <span class="fn">_mm_unpacklo_ps</span>(<span class="var">CamWorldMat_1_negated</span>, <span class="var">CamWorldMat_2</span>);
+</div>
+
+<p>The _mm_unpacklo_ps and _mm_unpackhi_ps instructions are used to merge parts of two __m128 vectors</p>
+
+<p><strong>_mm_unpacklo_ps</strong><br />
+This unpacks (merges) the lower 64 bits (the first two floats) of both vectors. So it combines the x and y 
+components of each vector in an alternating pattern.</p>
+
+<div class="ida-code"><span class="var">mergedLow</span> = (<span class="var">CamWorldMat_1_negated.x</span>, <span class="var">CamWorldMat_2.x</span>, <span class="var">CamWorldMat_1_negated.y</span>, <span class="var">CamWorldMat_2.y</span>)
+</div>
+
+<p><strong>_mm_unpackhi_ps</strong><br />
+Similarly merges the higher 64 bits (the last two floats) of both vectors, so it combines the z and w components in the same alternating fashion.</p>
+
+<div class="ida-code"><span class="var">mergedHigh</span> = (<span class="var">CamWorldMat_1_negated.z</span>, <span class="var">CamWorldMat_2.z</span>, <span class="var">CamWorldMat_1_negated.w</span>, <span class="var">CamWorldMat_2.w</span>)
+</div>
+
+<h3 id="transposing-and-shuffling-intermediate-vectors-theory">Transposing and Shuffling Intermediate Vectors (Theory)</h3>
+
+<div class="ida-code"><span class="var">v11</span> = <span class="fn">_mm_and_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">mergedHigh</span>, <span class="var">CamWorldMat_0</span>, <span class="num">0x24</span>), (<span class="type">__m128</span>)<span class="const">NaNNaNNaN0f_Mask</span>);
+<span class="var">v12</span> = <span class="fn">_mm_and_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">mergedLow</span>, <span class="var">CamWorldMat_0</span>, <span class="num">0x1E</span>), (<span class="type">__m128</span>)<span class="const">NaNNaNNaN0f_Mask</span>);
+<span class="var">v13</span> = <span class="fn">_mm_and_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">mergedLow</span>, <span class="var">CamWorldMat_0</span>, <span class="num">4</span>), (<span class="type">__m128</span>)<span class="const">NaNNaNNaN0f_Mask</span>);
+</div>
+
+<p>These instructions continue the SIMD-based matrix construction logic.</p>
+
+<ul>
+  <li>Shuffles components from mergedLow, mergedHigh, and CamWorldMat_0 using _mm_shuffle_ps</li>
+  <li>Then masks the result using NaNNaNNaN0f_Mask to zero out the W component (renamed xmmword_1138D50)</li>
+</ul>
+
+<p>Since we’ve already broken down how _mm_shuffle_ps and _mm_and_ps work earlier in this post, we won’t repeat that here.</p>
+
+<h3 id="manual-matrix-reconstruction-from-simd-operations-example">Manual Matrix Reconstruction from SIMD Operations (Example)</h3>
+
+<p><em>(This section is for readers who want to understand exactly how the View matrix gets constructed at the instruction level. 
+You can skip ahead to SIMD Matrix multiplication if you’re just here to learn)</em></p>
+
+<p>We’re going to take a snapshot of the memory, walk through the SIMD instructions, and confirm how the final matrix rows are built.</p>
+
+<p><strong>Camera World Matrix</strong><br />
+<img src="/ViewProj-Blog/assets/images/part-4.2/cam-world-matrix.png" alt="ESP-Image1" /></p>
+
+<p><strong>IDA Disassembly</strong>
+<img src="/ViewProj-Blog/assets/images/part-4.2/ida-view-calc.png" alt="ESP-Image1" /></p>
+
+<p>Let’s decode this step-by-step and rebuild the rows of the matrix ourselves to see exactly what’s going on under the hood.</p>
+
+<p>CamWorldMat_0 = [0.416, -0.893, 0.170 0]<br />
+CamWorldMat_1_negated = [-0.906, -0.423, 0, 0]<br />
+CamWorldMat_2 = [-0.072, 0.154, 0.985, 0]</p>
+
+<p>mergedHigh = [0, 0.985, 0, 0]
+mergedLow = [-0.906, -0.072, -0.423, 0.154]</p>
+
+<p><strong>First instruction</strong></p>
+
+<div class="ida-code"><span class="var">v11</span> = <span class="fn">_mm_and_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">mergedHigh</span>, <span class="var">CamWorldMat_0</span>, <span class="num">0x24</span>), (<span class="type">__m128</span>)<span class="const">NaNNaNNaN0f_Mask</span>);
+</div>
+
+<p>Binary of 0x24 is ‘00100100’</p>
+
+<p>SomeRow0 =</p>
+<ul>
+  <li>merHi[00] = 0</li>
+  <li>merHi[01] = 0.985</li>
+  <li>CamWorld0[10] = 0.170</li>
+  <li>CamWorld0[00] = 0.416</li>
+</ul>
+
+<p>BitMask Applied = [0, 0.985, 0.170, 0]</p>
+
+<p><strong>Second Instruction</strong></p>
+<div class="ida-code"><span class="var">v12</span> = <span class="fn">_mm_and_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">mergedLow</span>, <span class="var">CamWorldMat_0</span>, <span class="num">0x1E</span>), (<span class="type">__m128</span>)<span class="const">NaNNaNNaN0f_Mask</span>);
+</div>
+
+<p>Binary of 0x1E is ‘00011110’</p>
+
+<p>SomeRow1 =</p>
+<ul>
+  <li>merLo[10] = -0.423</li>
+  <li>merLo[11] = 0.154</li>
+  <li>CamWorld0[01] = -0.893</li>
+  <li>CamWorld0[00] = 0.416</li>
+</ul>
+
+<p>BitMask Applied = [-0.423, 0.154, -0.893, 0]</p>
+
+<p><strong>Third Instruction</strong></p>
+<div class="ida-code"><span class="var">v13</span> = <span class="fn">_mm_and_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">mergedLow</span>, <span class="var">CamWorldMat_0</span>, <span class="num">0x04</span>), (<span class="type">__m128</span>)<span class="const">NaNNaNNaN0f_Mask</span>);
+</div>
+
+<p>Binary of 0x04 is ‘00000100’</p>
+
+<p>SomeRow2 =</p>
+<ul>
+  <li>merLo[00] = -0.906</li>
+  <li>merLo[01] = -0.072</li>
+  <li>CamWorld0[00] = 0.416</li>
+  <li>CamWorld0[00] = 0.416</li>
+</ul>
+
+<p>BitMask Applied = [-0.906, -0.072, 0.416, 0]</p>
+
+<p>Let’s keep these Vec4 values in mind, we’ll come back to them shortly.</p>
+
+<p>Before continuing with the manual calculation of the final matrix, let’s take a quick but important 
+detour to understand how matrix multiplication works with SIMD and __m128 vectors.</p>
+
+<h3 id="simd-based-vec4--4x4-matrix-multiplication-theory">SIMD-Based Vec4 × 4x4 Matrix Multiplication (Theory)</h3>
+
+<p><strong>Matrix Multiplication With a Vec4</strong>
+<img src="/ViewProj-Blog/assets/images/part-4.2/simd-matrix-math.png" alt="ESP-Image1" /></p>
+
+<p>This instruction:</p>
+
+<div class="ida-code"> <span class="var">v16</span>[<span class="num">1</span>] = <span class="fn">_mm_add_ps</span>(
+             <span class="fn">_mm_add_ps</span>(
+               <span class="fn">_mm_add_ps</span>(
+		 <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">someRow1</span>, <span class="var">someRow1</span>, <span class="num">0</span>), <span class="var">ProjMat_0</span>), 
+		 <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">someRow1</span>, <span class="var">someRow1</span>, <span class="num">0x55</span>), <span class="var">ProjMat_1</span>)),
+               <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">someRow1</span>, <span class="var">someRow1</span>, <span class="num">0xAA</span>), <span class="var">ProjMat_2</span>)),
+             <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">someRow1</span>, <span class="var">someRow1</span>, <span class="num">0xFF</span>), <span class="var">ProjMat_3</span>));
+</div>
+
+<p>is basically performing a SIMD dot product between a row from the view matrix (someRow1) and each column of the projection matrix 
+(ProjMat_0 … ProjMat_3). Here’s how it works:</p>
+
+<p><strong>Step 1: Shuffle</strong></p>
+<ul>
+  <li>_mm_shuffle_ps(someRow1, someRow1, imm) selects one component of someRow1 and replicates it across all 4 slots of a new __m128.</li>
+  <li>The different imm values pick different elements:
+    <ul>
+      <li>0x00-&gt; picks element 0 (X)</li>
+      <li>0x55-&gt; picks element 1 (Y)</li>
+      <li>0xAA-&gt; picks element 2 (Z)</li>
+      <li>0xFF-&gt; picks element 3 (W)</li>
+    </ul>
+  </li>
+</ul>
+
+<p>After shuffling, each __m128 looks like [X,X,X,X], [Y,Y,Y,Y], etc.</p>
+
+<p><strong>Step 2: Multiply with Projection Matrix</strong></p>
+
+<ul>
+  <li>Each shuffled vector is multiplied component-wise with a column of the projection matrix:</li>
+</ul>
+
+<div class="ida-code"><span class="fn">_mm_mul_ps</span>(<span class="var">shuffledRow</span>, <span class="var">ProjMat_n</span>)
+</div>
+
+<ul>
+  <li>This performs 4 parallel multiplications of the same row component with each element in the projection matrix column.</li>
+</ul>
+
+<p><strong>Step 3: Sum the results</strong></p>
+<ul>
+  <li>The _mm_add_ps calls sum all four products together:</li>
+</ul>
+
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">(</span><span class="n">X</span> <span class="o">*</span> <span class="n">ProjMat_0</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">Y</span> <span class="o">*</span> <span class="n">ProjMat_1</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">Z</span> <span class="o">*</span> <span class="n">ProjMat_2</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">W</span> <span class="o">*</span> <span class="n">ProjMat_3</span><span class="p">)</span>
+</code></pre></div></div>
+
+<ul>
+  <li>The result is a single row of the final View-Projection matrix in SIMD form (__m128).</li>
+</ul>
+
+<p><strong>Step 4: Store the result</strong></p>
+
+<ul>
+  <li>v16[1] now holds the second row of the reconstructed VP matrix.</li>
+  <li>This same pattern repeats for the other rows, essentially performing a full matrix multiplication using SIMD instructions.</li>
+</ul>
+
+<p>At a higher level, what this instruction is doing is nothing more than standard matrix multiplication. If we take a row from the view matrix, say 
+[x y z w], and multiply it with the projection matrix, the operation expands like this:</p>
+
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">[</span><span class="n">x</span>  <span class="n">y</span>  <span class="n">z</span>  <span class="n">w</span><span class="p">]</span>   <span class="o">*</span>  <span class="p">[</span> <span class="n">projMat00</span>  <span class="n">projMat01</span>  <span class="n">projMat02</span>  <span class="n">projMat03</span> <span class="p">]</span>
+                  <span class="p">[</span> <span class="n">projMat10</span>  <span class="n">projMat11</span>  <span class="n">projMat12</span>  <span class="n">projMat13</span> <span class="p">]</span>
+                  <span class="p">[</span> <span class="n">projMat20</span>  <span class="n">projMat21</span>  <span class="n">projMat22</span>  <span class="n">projMat23</span> <span class="p">]</span>
+                  <span class="p">[</span> <span class="n">projMat30</span>  <span class="n">projMat31</span>  <span class="n">projMat32</span>  <span class="n">projMat33</span> <span class="p">]</span>
+</code></pre></div></div>
+
+<p>Which produces:</p>
+
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="p">[</span> <span class="n">x</span><span class="o">*</span><span class="n">projMat00</span> <span class="o">+</span> <span class="n">y</span><span class="o">*</span><span class="n">projMat10</span> <span class="o">+</span> <span class="n">z</span><span class="o">*</span><span class="n">projMat20</span> <span class="o">+</span> <span class="n">w</span><span class="o">*</span><span class="n">projMat30</span><span class="p">,</span>
+  <span class="n">x</span><span class="o">*</span><span class="n">projMat01</span> <span class="o">+</span> <span class="n">y</span><span class="o">*</span><span class="n">projMat11</span> <span class="o">+</span> <span class="n">z</span><span class="o">*</span><span class="n">projMat21</span> <span class="o">+</span> <span class="n">w</span><span class="o">*</span><span class="n">projMat31</span><span class="p">,</span>
+  <span class="n">x</span><span class="o">*</span><span class="n">projMat02</span> <span class="o">+</span> <span class="n">y</span><span class="o">*</span><span class="n">projMat12</span> <span class="o">+</span> <span class="n">z</span><span class="o">*</span><span class="n">projMat22</span> <span class="o">+</span> <span class="n">w</span><span class="o">*</span><span class="n">projMat32</span><span class="p">,</span>
+  <span class="n">x</span><span class="o">*</span><span class="n">projMat03</span> <span class="o">+</span> <span class="n">y</span><span class="o">*</span><span class="n">projMat13</span> <span class="o">+</span> <span class="n">z</span><span class="o">*</span><span class="n">projMat23</span> <span class="o">+</span> <span class="n">w</span><span class="o">*</span><span class="n">projMat33</span> <span class="p">]</span>  
+</code></pre></div></div>
+
+<p>The results are then added together, producing a new row in the final View-Projection matrix.<br />
+This happens for the first three rows (v16[0], v16[1], and v16[2]).</p>
+
+<p>But the last row, v16[3], is a bit different:</p>
+
+<div class="ida-code"> <span class="var">v16</span>[<span class="num">3</span>] = <span class="fn">_mm_add_ps</span>(
+             <span class="fn">_mm_add_ps</span>(
+               <span class="fn">_mm_add_ps</span>(
+		 <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>((<span class="type">__m128</span>)<span class="var">xmmword_1138D10</span>, (<span class="type">__m128</span>)<span class="var">xmmword_1138D10</span>, <span class="num">0</span>), <span class="var">ProjMat_0</span>), 
+		 <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>((<span class="type">__m128</span>)<span class="var">xmmword_1138D10</span>, (<span class="type">__m128</span>)<span class="var">xmmword_1138D10</span>, <span class="num">0x55</span>), <span class="var">ProjMat_1</span>)),
+               <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>((<span class="type">__m128</span>)<span class="var">xmmword_1138D10</span>, (<span class="type">__m128</span>)<span class="var">xmmword_1138D10</span>, <span class="num">0xAA</span>), <span class="var">ProjMat_2</span>)),
+             <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>((<span class="type">__m128</span>)<span class="var">xmmword_1138D10</span>, (<span class="type">__m128</span>)<span class="var">xmmword_1138D10</span>, <span class="num">0xFF</span>), <span class="var">ProjMat_3</span>));
+</div>
+
+<p>Here it uses a constant vector (xmmword_1138D10) which has a value of: (0.0, 0.0, 0.0, 1.0)<br />
+Since the first three components are zero, those multiplications with ProjMat_0, ProjMat_1, and ProjMat_2 drop out. The only one left is 
+is the last one, where w = 1.0 multiplies the row of the Projection matrix.<br />
+This effectively copies the last row of the Projection matrix directly into the View-Projection matrix:</p>
+
+<div class="ida-code"> <span class="var">v16</span>[<span class="num">3</span>] = [ <span class="var">projMat30</span>, <span class="var">projMat31</span>, <span class="var">projMat32</span>, <span class="var">projMat33</span> ]
+</div>
+
+<p>The translation from the View matrix is skipped here.</p>
+
+<p><strong>Overengineered Construction:</strong></p>
+
+<p>You might have noticed this is Overengineered.<br />
+Here, xmmword_1138D10 is simply (0.0, 0.0, 0.0, 1.0).<br />
+When you multiply this constant by the projection matrix rows, only the W=1.0 lane survives, which means you’re 
+just selecting the last row of the projection matrix (ProjMat_3).</p>
+
+<p>So this whole instruction chain simplifies to:</p>
+
+<div class="ida-code"> <span class="var">v16</span>[<span class="num">3</span>] = <span class="var">ProjMat_3</span>;
+</div>
+
+<p>Just like the camera position shuffle, the final VP row construction is an over-engineered SIMD pattern (probably).</p>
+
+<h2 id="comparing-constructed-matrix-with-camera-world-matrix">Comparing Constructed Matrix with Camera World Matrix:</h2>
+
+<ul>
+  <li>SomeRow0 = [0, 0.985, 0.170, 0]</li>
+  <li>SomeRow1 = [-0.423, 0.154, -0.893, 0]</li>
+  <li>SomeRow2 = [-0.906, -0.072, 0.416, 0]</li>
+  <li>xmmword_1138D10 = [0.0, 0.0, 0.0, 1.0]</li>
+</ul>
+
+<p><strong>Let’s recap how it was constructed:</strong><br />
+<img src="/ViewProj-Blog/assets/images/part-4.2/simd-matrix-math.png" alt="ESP-Image1" /></p>
+
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">v16</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">SomeRow2</span> <span class="n">x</span> <span class="n">Projection</span> <span class="n">Matrix</span> <span class="mi">4</span><span class="n">x4</span><span class="p">;</span>
+<span class="n">v16</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">SomeRow1</span> <span class="n">x</span> <span class="n">Projection</span> <span class="n">Matrix</span> <span class="mi">4</span><span class="n">x4</span><span class="p">;</span>
+<span class="n">v16</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="n">SomeRow0</span> <span class="n">x</span> <span class="n">Projection</span> <span class="n">Matrix</span> <span class="mi">4</span><span class="n">x4</span><span class="p">;</span>
+<span class="n">v16</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span> <span class="o">=</span> <span class="n">xmmword_1138D10</span> <span class="n">x</span> <span class="n">Projection</span> <span class="n">Matrix</span> <span class="mi">4</span><span class="n">x4</span><span class="p">;</span> 
+</code></pre></div></div>
+
+<p>So the Multiplication Looks like so:</p>
+
+\[\text{NewMatrix} \times \text{ProjectionMatrix} =
+\begin{bmatrix}
+-0.906 &amp; -0.072 &amp; 0.416 &amp; 0 \\
+-0.423 &amp; 0.154 &amp; -0.893 &amp; 0 \\
+0 &amp; 0.985 &amp; 0.170 &amp; 0 \\
+0 &amp; 0 &amp; 0 &amp; 1.0
+\end{bmatrix}
+\times
+\begin{bmatrix}
+1.264 &amp; 0.000 &amp; 0.000 &amp; 0.000 \\
+0.000 &amp; 2.247 &amp; 0.000 &amp; 0.000 \\
+0.000 &amp; 0.000 &amp; 0.000 &amp; 1.000 \\
+0.000 &amp; 0.000 &amp; 10.000 &amp; 0.000
+\end{bmatrix}\]
+
+<p>Let’s compare the newly constructed matrix with the original Camera World Matrix to understand how it was derived:</p>
+
+\[New Matrix =
+\begin{bmatrix}
+-0.906 &amp; -0.072 &amp; 0.416 &amp; 0 \\
+-0.423 &amp; 0.154 &amp; -0.893 &amp; 0 \\
+0 &amp; 0.985 &amp; 0.170 &amp; 0 \\
+0 &amp; 0 &amp; 0 &amp; 1.0
+\end{bmatrix}\]
+
+\[CamWorldMat =
+\begin{bmatrix}
+0.416 &amp; -0.893 &amp; 0.170 &amp; 0 \\
+0.906 &amp; 0.423 &amp; 0 &amp; 0 \\
+-0.072 &amp; 0.154 &amp; 0.985 &amp; 0 \\
+-112913.16 &amp; -613576.88 &amp; 2234.39 &amp; 1.0
+\end{bmatrix}\]
+
+<p>From this comparison, we can see that the new matrix is essentially a rearranged and partially negated version of the Camera World Matrix’s (we found in memory)</p>
+
+<blockquote>
+  <p>Later in Part 4.3 we find the actual Matrix the engine uses for it’s camera transform.</p>
+</blockquote>
+
+<p>So the Newly Constructed Matrix is constructed like so from the camera world matrix:</p>
+
+<ul>
+  <li>Row[0] from CamWorldMat → becomes Column[2]</li>
+  <li>Row[1] from CamWorldMat → becomes –Column[0]</li>
+  <li>Row[2] from CamWorldMat → becomes Column[1]</li>
+</ul>
+
+<p>This is Basically doing a <em>Fast inverse for orthonormal Matrices</em> with an additional <em>Coordinate Swap</em></p>
+
+<blockquote>
+  <p>Keep in mind \(ViewMatrix=(CamWorldMatrix)^{−1}\)</p>
+</blockquote>
+
+<h2 id="fast-inverse-for-orthonormal-matrices">Fast inverse for orthonormal Matrices</h2>
+
+<p>If R is a pure rotation matrix meaning:</p>
+
+<ul>
+  <li>No scaling,</li>
+  <li>No shear,</li>
+  <li>It’s orthonormal (columns are perpendicular and unit-length),</li>
+</ul>
+
+<p>then \(R^{-1} = R^T\)</p>
+
+<p>Let me explain this theory a bit better:</p>
+
+<p>Suppose a 4x4 matrix with homogenous coordinates:</p>
+
+\[C_{world} =
+\begin{bmatrix}
+R_{00} &amp; R_{01} &amp; R_{02} &amp; 0 \\
+R_{10} &amp; R_{11} &amp; R_{12} &amp; 0 \\
+R_{20} &amp; R_{21} &amp; R_{22} &amp; 0 \\
+T_x &amp; T_y &amp; T_z &amp; 1.0
+\end{bmatrix}\]
+
+<p>Here:</p>
+<ul>
+  <li>R (upper 3×3) is the orientation of the camera in world space.</li>
+  <li>T (bottom row, first 3 values) is the position of the camera in world space.</li>
+</ul>
+
+<p>To get \(C_{world}^{-1}\) we can separate the matrix like so:</p>
+
+\[C_{world} =
+\begin{bmatrix}
+R &amp; 0 \\
+T &amp; 1
+\end{bmatrix}\]
+
+<p>and we want its inverse.</p>
+
+<p>The block matrix inverse formula for this special form  is:</p>
+
+\[\begin{bmatrix} 
+A &amp; 0 \\ 
+B &amp; 1 
+\end{bmatrix}^{-1}
+=
+\begin{bmatrix} 
+A^{-1} &amp; 0 \\ 
+-BA^{-1} &amp; 1 
+\end{bmatrix}\]
+
+<p><em>(See <a href="https://en.wikipedia.org/wiki/Invertible_matrix#Blockwise_inversion">Wikipedia: Blockwise inversion</a> for the general derivation)</em></p>
+
+<p>Applying The Formula we get:</p>
+
+<ul>
+  <li>A = R</li>
+  <li>B = T</li>
+</ul>
+
+<p>So:</p>
+
+\[C_{world}^{-1} =
+\begin{bmatrix}
+R^{-1} &amp; 0 \\
+-TR^{-1} &amp; 1
+\end{bmatrix}\]
+
+<p>Since R is orthonormal (\(R^{-1} = R^T\)):</p>
+
+\[C_{world}^{-1} =
+\begin{bmatrix}
+R^T &amp; 0 \\
+-TR^T &amp; 1
+\end{bmatrix}\]
+
+<blockquote>
+  <p>Exponent “T” represents the Transpose and Regular “T” represents the Translation</p>
+</blockquote>
+
+<p>Now Expand  \(−TR^T\) into its dot products:</p>
+
+<p>if:</p>
+
+\[R =
+\begin{bmatrix}
+R_{0x} &amp; R_{0y} &amp; R_{0z} \\
+R_{1x} &amp; R_{1y} &amp; R_{1z} \\
+R_{2x} &amp; R_{2y} &amp; R_{2z} \\
+\end{bmatrix}\]
+
+<p>and \(T = [T_x, T_y, T_z],\)</p>
+
+<p>So:</p>
+
+\[-TR^T=
+\begin{bmatrix} 
+-T_x &amp; -T_y &amp; -T_z \\
+\end{bmatrix}
+\times
+\begin{bmatrix}
+R_{0x} &amp; R_{1x} &amp; R_{2x} \\
+R_{0y} &amp; R_{1y} &amp; R_{2y} \\
+R_{0z} &amp; R_{1z} &amp; R_{2z} \\
+\end{bmatrix}\]
+
+<p>then:</p>
+
+\[-TR^T = [-dot(T,R_0), -dot(T,R_1), -dot(T,R_2)]\]
+
+<p>So the last row becomes:</p>
+
+\[[-dot(T,R_0), -dot(T,R_1), -dot(T,R_2)]\]
+
+<p>And Expanding \(R^T\) is just the Transpose of the Rotation, thus completing the inverse:</p>
+
+\[C_{world}^{-1} =
+\begin{bmatrix}
+R^T &amp; 0 \\
+-TR^T &amp; 1
+\end{bmatrix}\]
+
+<p>Here for the last row the engine does another method (which we will reverse in Part 4.3):</p>
+
+<p>They take Negated LastRow of \(C_{world}\) (Translation) and multiply it with View Matrix without Translation and add the calculated 
+output into the last row.</p>
+
+<p>This is mathamatically the same as:</p>
+
+\[-TR^T = [-dot(T,R_0), -dot(T,R_1), -dot(T,R_2)]\]
+
+<blockquote>
+  <p>No i wont show proof, do it yourself and confirm</p>
+</blockquote>
+
+<p>The only difference seen in this Engine is that they also do:</p>
+<ul>
+  <li>A Coordinate Swap.</li>
+  <li>Changes Handedness.</li>
+</ul>
+
+<blockquote>
+  <p>⚠️ Note:<br />
+This fast inverse only works for rigid transforms (no scale/shear).
+For a general 4×4 matrix you must use:<br />
+\(\begin{align}M^{-1} = \frac{1}{det(M)}  adj(M)\end{align}\)</p>
+</blockquote>
+
+<h2 id="continuaton-of-manual-matrix-reconstruction-example">Continuaton of Manual Matrix Reconstruction (Example)</h2>
+
+<p>Now that we know how SIMD-Based Vec4 × 4x4 Matrix Multiplication works let’s continue the Matrix Reconstruction.</p>
+
+<ul>
+  <li>SomeRow0 = [0, 0.985, 0.170, 0]</li>
+  <li>SomeRow1 = [-0.423, 0.154, -0.893, 0]</li>
+  <li>SomeRow2 = [-0.906, -0.072, 0.416, 0]</li>
+</ul>
+
+<p>Lets construct v16[0] as an example:</p>
+
+<div class="ida-code"> <span class="var">v16</span>[<span class="num">0</span>] = <span class="fn">_mm_add_ps</span>(
+             <span class="fn">_mm_add_ps</span>(
+               <span class="fn">_mm_add_ps</span>(
+		 <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">someRow2</span>, <span class="var">someRow2</span>, <span class="num">0</span>), <span class="var">ProjMat_0</span>), 
+		 <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">someRow2</span>, <span class="var">someRow2</span>, <span class="num">0x55</span>), <span class="var">ProjMat_1</span>)),
+               <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">someRow2</span>, <span class="var">someRow2</span>, <span class="num">0xAA</span>), <span class="var">ProjMat_2</span>)),
+             <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">someRow2</span>, <span class="var">someRow2</span>, <span class="num">0xFF</span>), <span class="var">ProjMat_3</span>));
+</div>
+
+<p><strong>After Shuffling:</strong></p>
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">_mm_mul_ps</span><span class="p">(</span> <span class="p">[</span><span class="o">-</span><span class="mf">0.906</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.906</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.906</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.906</span><span class="p">]</span> <span class="p">,</span> <span class="n">ProjMat_0</span><span class="p">),</span>
+<span class="n">_mm_mul_ps</span><span class="p">(</span> <span class="p">[</span><span class="o">-</span><span class="mf">0.072</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.072</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.072</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.072</span><span class="p">]</span> <span class="p">,</span> <span class="n">ProjMat_1</span><span class="p">)),</span>
+<span class="n">_mm_mul_ps</span><span class="p">(</span> <span class="p">[</span><span class="mf">0.416</span><span class="p">,</span> <span class="mf">0.416</span><span class="p">,</span> <span class="mf">0.416</span><span class="p">,</span> <span class="mf">0.416</span><span class="p">]</span> <span class="p">,</span> <span class="n">ProjMat_2</span><span class="p">)),</span>
+<span class="n">_mm_mul_ps</span><span class="p">(</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span> <span class="p">,</span> <span class="n">ProjMat_3</span><span class="p">));</span>
+</code></pre></div></div>
+
+<p>For reference, The Projection Matrix:<br />
+<img src="/ViewProj-Blog/assets/images/part-4.1/a1+200-matrix.png" alt="ESP-Image1" /></p>
+
+<p><strong>After Multipling:</strong></p>
+
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">v16</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">_mm_add_ps</span><span class="p">(</span>
+             <span class="n">_mm_add_ps</span><span class="p">(</span>
+               <span class="n">_mm_add_ps</span><span class="p">(</span>
+		<span class="p">[</span><span class="o">-</span><span class="mf">1.145</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+		 <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.161</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+		   <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">0.416</span><span class="p">])</span>
+		    	<span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p><strong>After Addition:</strong></p>
+
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">v16</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="o">-</span><span class="mf">1.145</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.161</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">0.416</span><span class="p">]</span>
+</code></pre></div></div>
+
+<h2 id="confirmation-of-vp-matrix">Confirmation Of VP Matrix:</h2>
+
+<p><img src="/ViewProj-Blog/assets/images/part-4.2/VP_matrix.png" alt="ESP-Image1" /></p>
+
+<p>Here we see the 0th row of the VP matrix matches exactly as our manual reconstruction of the row.</p>
+
+<h2 id="passing-the-results-forward">Passing the Results Forward</h2>
+
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">return</span> <span class="nf">sub_7FBF10</span><span class="p">(</span><span class="n">camStruct</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">v15</span><span class="p">,</span> <span class="n">v16</span><span class="p">);</span>
+</code></pre></div></div>
+
+<p>Now that the function has finished constructing the ViewProjection matrix (without translation), it makes its final call:</p>
+
+<ul>
+  <li>&amp;v15 = (camera position)</li>
+  <li>v16 = (ViewProjection matrix without translation)</li>
+</ul>
+
+<p>The sub_7FBF10 function constructs the View-Projection Matrix with Translation.</p>
+
+<blockquote>
+  <p><strong>Why use View-Projection Matrix without Translation?</strong><br />
+That’s usually for the skybox.<br />
+If the camera’s position (translation) was applied, the sky would “move” as you walk around, By removing translation, 
+the skybox always stays centered on you, and only rotation matters</p>
+</blockquote>
+
+<p><em>That wraps up the partial View-Projection matrix construction. In the next post, we’ll look at sub_7FBF10, 
+the function that builds the full View-Projection Matrix.</em></p>
+
+
+  </div><a class="u-url" href="/ViewProj-Blog/part-4.2-reversing-simd-instrustions/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/ViewProj-Blog/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Reversing The ViewProjection Matrix</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">z1rp</li><li><a class="u-email" href="mailto:Zer0_1rp@proton.me">Zer0_1rp@proton.me</a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Reverse Engineering the ViewProjection Pipeline in Ghost of Tsushima</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>
+

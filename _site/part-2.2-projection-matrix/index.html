@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Part 2.2: Projection Matrix | Reversing The ViewProjection Matrix</title>
+<meta name="generator" content="Jekyll v4.4.1" />
+<meta property="og:title" content="Part 2.2: Projection Matrix" />
+<meta name="author" content="z1rp" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="What is the Projection Matrix?" />
+<meta property="og:description" content="What is the Projection Matrix?" />
+<link rel="canonical" href="http://localhost:4000/ViewProj-Blog/part-2.2-projection-matrix/" />
+<meta property="og:url" content="http://localhost:4000/ViewProj-Blog/part-2.2-projection-matrix/" />
+<meta property="og:site_name" content="Reversing The ViewProjection Matrix" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2025-07-17T00:00:00+05:30" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Part 2.2: Projection Matrix" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"z1rp"},"dateModified":"2025-07-17T00:00:00+05:30","datePublished":"2025-07-17T00:00:00+05:30","description":"What is the Projection Matrix?","headline":"Part 2.2: Projection Matrix","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/ViewProj-Blog/part-2.2-projection-matrix/"},"url":"http://localhost:4000/ViewProj-Blog/part-2.2-projection-matrix/"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/ViewProj-Blog/assets/css/style.css">
+  <link rel="stylesheet" href="/ViewProj-Blog/assets/css/syntax.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/ViewProj-Blog/feed.xml" title="Reversing The ViewProjection Matrix" /></head>
+<!-- ✅ MathJax setup -->
+  <script>
+    MathJax = {
+      tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <!-- ✅ End MathJax setup -->
+
+  <body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/ViewProj-Blog/">Reversing The ViewProjection Matrix</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/ViewProj-Blog/">Index</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Part 2.2: Projection Matrix</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2025-07-17T00:00:00+05:30" itemprop="datePublished">Jul 17, 2025
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <h3 id="what-is-the-projection-matrix"><strong>What is the Projection Matrix?</strong></h3>
+
+<p>While the View Matrix transforms world coordinates into the camera’s local space, the Projection Matrix transforms that 3D camera space into a clipped 2D space.<br />
+This is the step where perspective is introduced where far objects look smaller, and near objects look larger.</p>
+<blockquote>
+  <p>view space -&gt; clip space</p>
+</blockquote>
+
+<p>The projection matrix defines how the 3D scene (Game) is projected onto a 2D surface (Your screen).<br />
+It Determines:</p>
+<ul>
+  <li>What part of the world is visible through the camera (field of view).</li>
+  <li>How deep the camera can see (near/far clipping planes).</li>
+  <li>How the perspective distortion should look (objects farther away appear smaller etc…)</li>
+  <li>Defines the 3D view Frustum</li>
+</ul>
+
+<p>There are two main types of projection matrices</p>
+<ul>
+  <li><strong>Perspective Projection</strong></li>
+  <li><strong>Orthographic Projection</strong></li>
+</ul>
+
+<p>Here we will only be looking at the Perspective Projection Matrix.</p>
+
+<h3 id="what-the-projection-matrix-does"><strong>What the Projection Matrix Does:</strong></h3>
+
+<p>The projection matrix transforms view space into clip space. The graphics pipeline then performs the perspective divide (dividing by w) to convert clip space into Normalized 
+Device Coordinates (NDC).<br />
+In NDC:</p>
+<ul>
+  <li>The x, y, and z coordinates are squeezed into a cube from -1 to 1.</li>
+  <li>Everything inside this cube is visible.</li>
+  <li>Everything outside is clipped (not rendered).</li>
+</ul>
+
+<p>The <em>Projection Matrix</em> represents how the camera sees. It gives the world its sense of depth and perspective, and its parameters:
+FOV, aspect ratio, near and far planes define the visible 3D frustum.</p>
+
+<h3 id="layout-of-the-perspective-projection-matrix">Layout of the Perspective Projection Matrix</h3>
+
+<p>Here is the standard layout of a row-major perspective projection matrix (DirectX):</p>
+
+\[P =
+\begin{bmatrix}
+x_{scale} &amp; 0 &amp; 0 &amp; 0 \\
+0 &amp; y_{scale} &amp; 0 &amp; 0 \\
+0 &amp; 0 &amp; \dfrac{z_{far}}{z_{far} - z_{near}} &amp; 1 \\
+0 &amp; 0 &amp; -\dfrac{z_{near} \cdot z_{far}}{z_{far} - z_{near}} &amp; 0
+\end{bmatrix}\]
+
+<p>Lets breakdown all the parameters:</p>
+
+<ul>
+  <li><strong>zNear:</strong> Near clip plane</li>
+  <li><strong>zFar:</strong> Far clip plane</li>
+  <li>
+    <p><strong>xScale:</strong><br />
+\(x_{scale} = \frac{1}{\tan{\left(\frac{Fov_X}{2}\right)}}\)</p>
+  </li>
+  <li>
+    <p><strong>yScale:</strong><br />
+\(y_{scale} = \frac{1}{\tan{\left(\frac{Fov_Y}{2}\right)}}\)</p>
+
+    <p>or equivalently,<br />
+\(y_{scale} = \frac{1}{AspectRatio \cdot \tan{\left(\frac{Fov_X}{2}\right)}}\)</p>
+
+    <p>where<br />
+\(Fov_Y = AspectRatio \cdot Fov_X\)</p>
+  </li>
+</ul>
+
+<h3 id="what-is-reverse-z"><strong>What is Reverse Z?</strong></h3>
+
+<p>Since this game uses the Reverse Z technique for its projection matrix, i will quickly explain what it is:</p>
+
+<p>Reverse Z is a trick used in modern engines to fix depth precision issues. Normally, the projection matrix maps the near plane to 0.0 and the far plane to 1.0, but that 
+causes most of the precision to get crammed near the camera. The farther the objects go, the less depth precision they get, which leads to Z-fighting, basically, two surfaces 
+fighting to render because their depth values end up almost identical.</p>
+
+<p>Reverse Z simply flips this, the near plane becomes 1.0 and the far plane becomes 0.0. That way you get way better precision at far distances.</p>
+
+<p>This works because floating-point values are denser near zero, so by reversing the range, the GPU distributes precision where it’s actually needed, for objects farther away, 
+not just right 
+in front of the camera.</p>
+
+<h3 id="layout-of-reverse-z-projection-matrix"><strong>Layout of Reverse Z Projection Matrix</strong></h3>
+
+\[P =
+\begin{bmatrix}
+x_{scale} &amp; 0 &amp; 0 &amp; 0 \\
+0 &amp; y_{scale} &amp; 0 &amp; 0 \\
+0 &amp; 0 &amp; \dfrac{z_{near}}{z_{near} - z_{far}} &amp; 1 \\
+0 &amp; 0 &amp; \dfrac{z_{far} \cdot z_{near}}{z_{near} - z_{far}} &amp; 0
+\end{bmatrix}\]
+
+<ul>
+  <li>Swapped near/far for m22</li>
+  <li>Swapped near/far and signs for m32</li>
+</ul>
+
+<p><em>We’ll later see how this matrix fits into the full pipeline and how the 3D position finally lands on your screen.</em></p>
+
+
+  </div><a class="u-url" href="/ViewProj-Blog/part-2.2-projection-matrix/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/ViewProj-Blog/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Reversing The ViewProjection Matrix</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">z1rp</li><li><a class="u-email" href="mailto:Zer0_1rp@proton.me">Zer0_1rp@proton.me</a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Reverse Engineering the ViewProjection Pipeline in Ghost of Tsushima</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>
+

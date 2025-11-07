@@ -1,0 +1,80 @@
+/* Custom styles to fix white code block outline in dark theme */
+
+// Select the pre and code tags for fenced code blocks
+// $border-color is a variable from Minima's SASS files, 
+// which is dark in the dark skin.
+
+.site-header {
+    background-color: #171819 !important;
+    // Override the top border with your desired lighter color (e.g., Slate Gray)
+    border-top: 5px solid #4c5256 !important; 
+
+    // Override the bottom border with your desired lighter color (e.g., Darker Gray)
+    border-bottom: 1px solid #4c5256 !important; 
+}
+
+.post-header {
+	border-bottom: 1px solid #4c5256 !important;
+}
+
+blockquote {
+    // Text color changed to #a8a095
+    color: #a8a095 !important;
+    
+    // Border color changed to #a8a095 (ensure it's not transparent)
+    border-left: 4px solid #a8a095 !important;
+}
+
+table {
+  margin-bottom: 30px;
+  width: 100%;
+  text-align: left;
+  color: #FFFFFF !important;
+  border-collapse: collapse;
+  border: 1px solid rgb(43.35, 43.35, 43.35);
+}
+table tr:nth-child(even) {
+  background-color: #151517 !important;
+}
+
+table th {
+  background-color: rgb(49.5, 49.5, 49.5);
+  border: 1px solid rgb(62.25, 62.25, 62.25);
+}
+table td {
+  border: 1px solid #535050 !important;
+}
+
+body {
+    // Keep this to ensure your main text is bright (e.g., pure white or bright gray)
+    color: #E7E7E7 !important; 
+    
+    // NEW: Set the background color to be slightly darker than the default #181818
+    // Using a very dark gray like #151515 or #111111
+    background-color: #0d0e0f !important; 
+}
+
+h1, h2, h3, h4, h5, h6 {
+    // Set the headings to be the same bright color as the body text, 
+    // or slightly different if you prefer. Using #FFFFFF here.
+    color: #FFFFFF !important;
+}
+
+pre,
+code {
+  border-color: var(--code-background-color, #1e1e1e);
+}
+
+pre {
+  background-color: var(--code-background-color, #1e1e1e);
+}
+pre,
+code {
+  border-color: var(--code-background-color, #1e1e1e); // Use the dark background color for the border
+}
+
+// Ensure the background of the pre tag matches the dark theme. 
+// This should fix any residual light background from the theme's default styles.
+pre {
+  background-color: var(--code-background-color, #1e1e1e);
+}

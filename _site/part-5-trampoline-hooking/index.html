@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Part 5: Trampoline Hooking to Capture Entity Positions | Reversing The ViewProjection Matrix</title>
+<meta name="generator" content="Jekyll v4.4.1" />
+<meta property="og:title" content="Part 5: Trampoline Hooking to Capture Entity Positions" />
+<meta name="author" content="z1rp" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Reverse Engineering the ViewProjection Pipeline in Ghost of Tsushima" />
+<meta property="og:description" content="Reverse Engineering the ViewProjection Pipeline in Ghost of Tsushima" />
+<link rel="canonical" href="http://localhost:4000/ViewProj-Blog/part-5-trampoline-hooking/" />
+<meta property="og:url" content="http://localhost:4000/ViewProj-Blog/part-5-trampoline-hooking/" />
+<meta property="og:site_name" content="Reversing The ViewProjection Matrix" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2025-07-17T00:00:00+05:30" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Part 5: Trampoline Hooking to Capture Entity Positions" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"z1rp"},"dateModified":"2025-07-17T00:00:00+05:30","datePublished":"2025-07-17T00:00:00+05:30","description":"Reverse Engineering the ViewProjection Pipeline in Ghost of Tsushima","headline":"Part 5: Trampoline Hooking to Capture Entity Positions","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/ViewProj-Blog/part-5-trampoline-hooking/"},"url":"http://localhost:4000/ViewProj-Blog/part-5-trampoline-hooking/"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/ViewProj-Blog/assets/css/style.css">
+  <link rel="stylesheet" href="/ViewProj-Blog/assets/css/syntax.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/ViewProj-Blog/feed.xml" title="Reversing The ViewProjection Matrix" /></head>
+<!-- ✅ MathJax setup -->
+  <script>
+    MathJax = {
+      tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <!-- ✅ End MathJax setup -->
+
+  <body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/ViewProj-Blog/">Reversing The ViewProjection Matrix</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/ViewProj-Blog/">Index</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Part 5: Trampoline Hooking to Capture Entity Positions</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2025-07-17T00:00:00+05:30" itemprop="datePublished">Jul 17, 2025
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <style>
+.cpp-code {
+  background: #1e1e1e;
+  color: #dcdcdc;
+  padding: 12px;
+  border-radius: 8px;
+  font-family: "Cascadia Code", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 14px;
+  line-height: 1.45;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+/* token colors */
+.cpp-code .kw      { color: #569cd6; }  /* keywords (if, for, return, etc.) */
+.cpp-code .type    { color: #4ec9b0; }  /* built-in / user types */
+.cpp-code .fn      { color: #dcdcaa; }  /* functions / intrinsics */
+.cpp-code .num     { color: #b5cea8; }  /* numbers */
+.cpp-code .var     { color: #9cdcfe; }  /* variables */
+.cpp-code .const   { color: #ce9178; }  /* string literals */
+.cpp-code .comment { color: #6a9955; font-style: italic; } /* comments */
+.cpp-code .preproc { color: #c586c0; }  /* #include, #define */
+</style>
+
+<h3 id="what-is-trampoline-hooking">What is Trampoline Hooking?</h3>
+
+<p>So far, we’ve played with detours and code caves. But now we’re stepping into trampoline hooking.</p>
+
+<p>The name is pretty self-explanatory: imagine program execution running along smoothly, then suddenly hitting our hook. Instead of just 
+overwriting instructions permanently, we “bounce” execution away (into our own custom code allocated with VirtualAllocEx), do what we need, 
+and then jump back into the original function flow (just after our hook), just like landing back on the trampoline.</p>
+
+<h3 id="the-plan">The Plan:</h3>
+
+<p>Our target is a function instruction that accesses the Z-axis of entities. By trampoline hooking it, we can capture every entity that passes 
+through this code. That way we build up a clean list of entity positions we can later use for world-to-screen ESP rendering.</p>
+
+<p>We can’t simply overwrite the instruction permanently, that would break the game’s logic. Instead, we’ll:</p>
+
+<ul>
+  <li>Redirect execution at the Z-axis instruction into our allocated memory.</li>
+  <li>Inside our hook, log which entity triggered this instruction and execute instructions overwritten by our hook.</li>
+  <li>After we’ve done our work, trampoline execution back into the original flow of the game, so nothing breaks.</li>
+</ul>
+
+<p><strong>Let’s begin</strong></p>
+
+<h3 id="the-hook">The Hook</h3>
+
+<p>Let’s start with how we are going to hook:</p>
+
+<p>For this hook, we’re not going to rely on a code cave. Instead, we’ll dynamically allocate memory inside the game process using the Windows 
+API function VirtualAllocEx. This function lets us carve out a chunk of memory in the target process and mark it as executable, so we can 
+safely drop in our own custom code.</p>
+
+<p>Let’s start with getting:</p>
+
+<ul>
+  <li>Process ID</li>
+  <li>Module Base Address</li>
+  <li>Handle to the Process</li>
+</ul>
+
+<div class="cpp-code"><span class="comment">// Get Process Id</span>
+<span class="var">ProcId</span> = <span class="fn">GetProcId</span>(<span class="const">L"GhostOfTsushima.exe"</span>);
+<span class="fn">CHECK</span>(<span class="var">ProcId</span>);
+
+<span class="fn">std::cout</span> &lt;&lt; <span class="const">"PROC ID : "</span> &lt;&lt; <span class="var">ProcId</span> &lt;&lt; <span class="fn">std::endl</span>;
+
+<span class="comment">// Get Base Address</span>
+<span class="var">baseAddr</span> = <span class="fn">GetModuleBaseAddress</span>(<span class="var">ProcId</span>, <span class="const">L"GhostOfTsushima.exe"</span>);
+<span class="fn">CHECK</span>(<span class="var">baseAddr</span>);
+
+<span class="fn">std::cout</span> &lt;&lt; <span class="const">"Base Address : "</span> &lt;&lt; <span class="fn">std::hex</span> &lt;&lt; <span class="var">baseAddr</span> &lt;&lt; <span class="fn">std::endl</span>;
+
+<span class="comment">// Get a Handle To The Process</span>
+<span class="var">hProcess</span> = <span class="fn">OpenProcess</span>(<span class="preproc">PROCESS_ALL_ACCESS</span>, <span class="num">0</span>, <span class="var">ProcId</span>);
+<span class="fn">CHECK</span>(<span class="var">hProcess</span>);
+</div>
+
+<h3 id="setting-up-memory-for-the-trampoline">Setting Up Memory for the Trampoline</h3>
+
+<p>Now, we allocate some executable memory inside the game with VirtualAllocEx.</p>
+
+<div class="cpp-code"><span class="type">LPVOID</span> <span class="fn">VirtualAllocEx</span>(
+    <span class="type">HANDLE</span> <span class="var">hProcess</span>,        <span class="comment">// Handle to target process</span>
+    <span class="type">LPVOID</span> <span class="var">lpAddress</span>,       <span class="comment">// Desired address (NULL lets the system decide)</span>
+    <span class="type">SIZE_T</span> <span class="var">dwSize</span>,          <span class="comment">// Size of memory block</span>
+    <span class="type">DWORD</span> <span class="var">flAllocationType</span>, <span class="comment">// MEM_COMMIT, MEM_RESERVE, or both</span>
+    <span class="type">DWORD</span> <span class="var">flProtect</span>         <span class="comment">// Memory protection (e.g., PAGE_EXECUTE_READWRITE)</span>
+);
+</div>
+
+<p>for our case i will use <em>VirtualAllocEx</em> with these arguments:</p>
+
+<div class="cpp-code">
+<span class="type">uintptr_t</span> <span class="var">reserve</span> = (<span class="type">uintptr_t</span>)<span class="fn">VirtualAllocEx</span>(
+    <span class="var">hProcess</span>,                <span class="comment">// The process handle we opened earlier</span>
+    <span class="kw">NULL</span>,                    <span class="comment">// NULL = let Windows decide where to put it</span>
+    <span class="num">128</span>,                     <span class="comment">// Reserve 128 bytes for our hook code</span>
+    <span class="preproc">MEM_COMMIT</span> | <span class="preproc">MEM_RESERVE</span>,<span class="comment">// Allocate + commit memory in one go</span>
+    <span class="preproc">PAGE_EXECUTE_READWRITE</span>   <span class="comment">// Make it readable, writable, and executable</span>
+);
+</div>
+
+<ul>
+  <li>hProcess → the handle we opened with OpenProcess.</li>
+  <li>NULL → we’re not picky about the address; Windows picks a safe spot.</li>
+  <li>128 → just enough space for our trampoline code and a jump back.</li>
+  <li>MEM_COMMIT, MEM_RESERVE → allocate and commit memory in one call.</li>
+  <li>PAGE_EXECUTE_READWRITE → we need the memory to run code, so it must be executable.</li>
+  <li>reserve → Pointer to our Allocated Memory</li>
+</ul>
+
+<p>If you want to learn more beyond this breakdown: <a href="https://learn.microsoft.com/en-us/windows/win32/api/memoryapi/nf-memoryapi-virtualallocex">MSDN VirtualAllocEx</a></p>
+
+<h3 id="hooking-the-z-axis-instruction">Hooking the Z-Axis Instruction</h3>
+
+<p>First we have to find our z coordinate in cheat engine. We can do so by going up and down on a slope in game and increase and decrease just like 
+what we did to find our view matrix but instead of looking up and down we make our player move up and down.<br />
+After narrowing down our results we can lock the value in cheat engine to see which address makes it so that our player is locked in place (with 
+respect to the Z-axis).</p>
+
+<p>Now we can see which instructions access our Z-axis:
+<img src="/ViewProj-Blog/assets/images/part-5/ce_z_access.png" alt="ESP-Image1" /></p>
+
+<p>I’m going to use the second instruction seen here just due to it being the most reliable one from testing.</p>
+
+<p>Looking at the disassembly:
+<img src="/ViewProj-Blog/assets/images/part-5/ce_disassmbly_zaxis.png" alt="ESP-Image1" /></p>
+
+<p>Let’s start counting how many bytes we need. We require 13 bytes for a full, mov reg; jmp reg hook.<br />
+Counting bytes we get:</p>
+
+<p><img src="/ViewProj-Blog/assets/images/part-5/ce_disassmbly_zaxis - Copy.png" alt="ESP-Image1" /></p>
+
+<p><strong>7+3+3 = 13;</strong></p>
+
+<p>So we have perfect 13 bytes no need to nop bytes to prevent spillover</p>
+
+<h3 id="writing-the-trampoline">Writing the Trampoline</h3>
+
+<p>Now that we have the essentials set up (Process ID, Module Base Address, Process Handle, and a pointer to our allocated memory from 
+VirtualAllocEx stored in reserve), it’s time to actually build the trampoline.</p>
+
+<p>The trampoline has two jobs:</p>
+
+<ol>
+  <li>Preserve the original instructions we overwrite when inserting our jump.</li>
+  <li>Redirect execution into our allocated memory, run our custom code, then “bounce” back just after the jump</li>
+</ol>
+
+<p><strong>Step 1: Backing Up Overwritten Bytes</strong></p>
+
+<p>When we inject a jump at the target instruction, we overwrite some of the game’s original instructions. If we don’t restore them later inside
+our trampoline, the game will break because those instructions were never executed.</p>
+
+<p>So, first we read and store those original bytes. In this case, we need 13 bytes (the exact size we counted for the jump without spilling into 
+the next instruction).</p>
+
+<div class="cpp-code"><span class="type">BYTE</span> <span class="var">stolenBytes</span>[<span class="num">13</span>];
+<span class="fn">ReadProcessMemory</span>(
+    <span class="var">hProcess</span>,
+    (<span class="type">BYTE</span>* )<span class="var">baseAddr</span> + <span class="num">0x8743F5</span>,   <span class="comment">// target address = module base + RVA</span>
+    <span class="var">stolenBytes</span>,
+    <span class="fn">sizeof</span>(<span class="var">stolenBytes</span>),
+    <span class="kw">nullptr</span>
+);
+</div>
+
+<p>Now we have a safe copy of the instructions we’re about to overwrite.</p>
+
+<p><strong>Step 2: Writing the Jump</strong></p>
+
+<p>To hook execution, we need to write a 64-bit absolute jump at our target instruction. A direct jump won’t fit in 5 bytes on x64, so we build 
+it in two steps:</p>
+
+<ol>
+  <li>Move the trampoline address into a register. We use mov rax, &lt;address&gt; (10 bytes). This loads the pointer to our allocated memory into rax.</li>
+  <li>Jump via that register. Then we do jmp rax (2 bytes), which transfers execution to our trampoline.</li>
+</ol>
+
+<p>Here’s the code that builds and writes that jump:</p>
+
+<div class="cpp-code"><span class="comment">// Build "mov rax, &lt;address&gt;"</span>
+<span class="type">BYTE</span> <span class="var">jmpArray</span>[<span class="num">10</span>];
+<span class="var">jmpArray</span>[<span class="num">0</span>] = <span class="num">0x48</span>; <span class="comment">// REX prefix for 64-bit</span>
+<span class="var">jmpArray</span>[<span class="num">1</span>] = <span class="num">0xB8</span>; <span class="comment">// Opcode for "mov rax, imm64"</span>
+<span class="fn">memcpy</span>(&amp;<span class="var">jmpArray</span>[<span class="num">2</span>], &amp;<span class="var">reserve</span>, <span class="fn">sizeof</span>(<span class="type">uintptr_t</span>)); <span class="comment">// Insert trampoline address</span>
+
+<span class="comment">// Build "jmp rax"</span>
+<span class="type">BYTE</span> <span class="var">movArray</span>[<span class="num">2</span>];
+<span class="var">movArray</span>[<span class="num">0</span>] = <span class="num">0xFF</span>; <span class="comment">// Opcode group for near/indirect jumps</span>
+<span class="var">movArray</span>[<span class="num">1</span>] = <span class="num">0xE0</span>; <span class="comment">// ModRM for "jmp rax"</span>
+
+<span class="comment">// Write both parts into the target function</span>
+<span class="fn">WriteProcessMemory</span>(
+    <span class="var">hProcess</span>,
+    (<span class="type">BYTE</span>* )<span class="var">baseAddr</span> + <span class="num">0x8743F5</span>, <span class="comment">// target instruction</span>
+    <span class="var">jmpArray</span>,
+    <span class="fn">sizeof</span>(<span class="var">jmpArray</span>),
+    <span class="kw">nullptr</span>
+);
+
+<span class="fn">WriteProcessMemory</span>(
+    <span class="var">hProcess</span>,
+    (<span class="type">BYTE</span>* )<span class="var">baseAddr</span> + <span class="num">0x8743F5</span> + <span class="fn">sizeof</span>(<span class="var">jmpArray</span>), <span class="comment">// directly after mov rax</span>
+    <span class="var">movArray</span>,
+    <span class="fn">sizeof</span>(<span class="var">movArray</span>),
+    <span class="kw">nullptr</span>
+);
+</div>
+
+<p>At this point, the original instruction at GhostOfTsushima.exe + 0x8743F5 no longer executes. Instead, execution now flows into our trampoline 
+code (inside the memory block allocated with VirtualAllocEx).</p>
+
+<h3 id="capturing--storing-entities">Capturing &amp; Storing Entities</h3>
+
+<p>To actually track every entity that hits our hooked instruction, we need a place to temporarily stash its pointer before our C++ code picks it up.</p>
+
+<p>We’ll keep all unique entities in an unordered_set:</p>
+
+<div class="cpp-code"><span class="type">std::unordered_set</span>&lt;<span class="type">uintptr_t</span>&gt; <span class="var">uniqueEntities</span>;
+</div>
+
+<p><strong>Allocating space for the “current entity”</strong><br />
+First, we reserve a single 8-byte slot inside the game process where our hook can write the most recent entity pointer:</p>
+
+<div class="cpp-code"><span class="var">entityAddr</span> = (<span class="type">uintptr_t</span>)<span class="fn">VirtualAllocEx</span>(
+    <span class="var">hProcess</span>,
+    <span class="kw">NULL</span>,
+    <span class="fn">sizeof</span>(<span class="type">uintptr_t</span>),
+    <span class="preproc">MEM_COMMIT</span> | <span class="preproc">MEM_RESERVE</span>,
+    <span class="preproc">PAGE_EXECUTE_READWRITE</span>
+);
+</div>
+
+<p>This will let us store our entities in the temporarily stash.</p>
+
+<p><strong>Writing to the slot in assembly</strong>
+Inside the game, rcx holds the current entity pointer. So our injected shellcode looks like this:</p>
+<pre><code class="language-asm">mov r10, &lt;entityAddr&gt;  ; load our reserved address into r10
+mov [r10], rcx         ; store rcx (entity pointer) into [entityAddr]
+</code></pre>
+<blockquote>
+  <p>⚠️ Why not just do mov [entityAddr], rcx?<br />
+Because x64 instructions can’t encode a full 64-bit absolute address directly. The only way is to load the address into a register 
+(r10 here) and then store through that register.</p>
+</blockquote>
+
+<p><strong>Shellcode</strong></p>
+
+<p>We build that logic into a small shellcode snippet and write it into our allocated trampoline memory:</p>
+
+<div class="cpp-code"><span class="type">BYTE</span> <span class="var">shellcode</span>[] = {
+    <span class="num">0x49</span>, <span class="num">0xBA</span>,              <span class="comment">// mov r10, imm64</span>
+    <span class="num">0</span>, <span class="num">0</span>, <span class="num">0</span>, <span class="num">0</span>, <span class="num">0</span>, <span class="num">0</span>, <span class="num">0</span>, <span class="num">0</span>,  <span class="comment">// placeholder for entityAddr</span>
+    <span class="num">0x49</span>, <span class="num">0x89</span>, <span class="num">0x0A</span>         <span class="comment">// mov [r10], rcx</span>
+};
+<span class="fn">memcpy</span>(&amp;<span class="var">shellcode</span>[<span class="num">2</span>], &amp;<span class="var">entityAddr</span>, <span class="fn">sizeof</span>(<span class="type">uintptr_t</span>));
+
+<span class="fn">WriteProcessMemory</span>(<span class="var">hProcess</span>, (<span class="type">BYTE</span>*)<span class="var">reserve</span>, <span class="var">shellcode</span>, <span class="fn">sizeof</span>(<span class="var">shellcode</span>), <span class="kw">nullptr</span>);
+</div>
+
+<p>At runtime, every time our hooked instruction is hit, the entity pointer in rcx gets stored at entityAddr.</p>
+
+<p><strong>Reading entities back in C++</strong></p>
+
+<p>Now we just poll that slot from our tool and log new entities as they appear:</p>
+
+<div class="cpp-code"><span class="kw">while</span> (<span class="kw">true</span>)
+{
+    <span class="type">uintptr_t</span> <span class="var">curEntity</span> = <span class="num">0</span>;
+
+    <span class="fn">ReadProcessMemory</span>(<span class="var">hProcess</span>, (<span class="type">BYTE</span>*)<span class="var">entityAddr</span>, &amp;<span class="var">curEntity</span>, <span class="fn">sizeof</span>(<span class="var">curEntity</span>), <span class="kw">nullptr</span>);
+
+    <span class="kw">if</span> (<span class="var">curEntity</span> != <span class="num">0</span> &amp;&amp; <span class="var">uniqueEntities</span>.<span class="fn">find</span>(<span class="var">curEntity</span>) == <span class="var">uniqueEntities</span>.<span class="fn">end</span>())
+    {
+        <span class="var">uniqueEntities</span>.<span class="fn">insert</span>(<span class="var">curEntity</span>);
+        <span class="fn">std::cout</span> &lt;&lt; <span class="const">"New unique entity found: "</span> &lt;&lt; <span class="fn">std::hex</span> &lt;&lt; <span class="var">curEntity</span> &lt;&lt; <span class="fn">std::endl</span>;
+    }
+}
+</div>
+
+<p><em>uniqueEntities.find(curEntity)</em> will return <em>uniqueEntities.end()</em> if no such data exits inside the unorderd map, then we simply insert it using 
+<em>uniqueEntities.insert(curEntity)</em></p>
+
+<p>This way, every time the Z-axis instruction fires for some entity, we capture it once and stash it in uniqueEntities. Later, we can loop 
+through this set and use their positions for ESP drawing.</p>
+
+
+  </div><a class="u-url" href="/ViewProj-Blog/part-5-trampoline-hooking/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/ViewProj-Blog/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Reversing The ViewProjection Matrix</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">z1rp</li><li><a class="u-email" href="mailto:Zer0_1rp@proton.me">Zer0_1rp@proton.me</a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Reverse Engineering the ViewProjection Pipeline in Ghost of Tsushima</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>
+

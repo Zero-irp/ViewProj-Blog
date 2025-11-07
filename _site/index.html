@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Index | Reversing The ViewProjection Matrix</title>
+<meta name="generator" content="Jekyll v4.4.1" />
+<meta property="og:title" content="Index" />
+<meta name="author" content="z1rp" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Reverse Engineering the ViewProjection Pipeline in Ghost of Tsushima" />
+<meta property="og:description" content="Reverse Engineering the ViewProjection Pipeline in Ghost of Tsushima" />
+<link rel="canonical" href="http://localhost:4000/ViewProj-Blog/" />
+<meta property="og:url" content="http://localhost:4000/ViewProj-Blog/" />
+<meta property="og:site_name" content="Reversing The ViewProjection Matrix" />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Index" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"WebSite","author":{"@type":"Person","name":"z1rp"},"description":"Reverse Engineering the ViewProjection Pipeline in Ghost of Tsushima","headline":"Index","name":"Reversing The ViewProjection Matrix","url":"http://localhost:4000/ViewProj-Blog/"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/ViewProj-Blog/assets/css/style.css">
+  <link rel="stylesheet" href="/ViewProj-Blog/assets/css/syntax.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/ViewProj-Blog/feed.xml" title="Reversing The ViewProjection Matrix" /></head>
+<!-- ✅ MathJax setup -->
+  <script>
+    MathJax = {
+      tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <!-- ✅ End MathJax setup -->
+
+  <body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/ViewProj-Blog/">Reversing The ViewProjection Matrix</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/ViewProj-Blog/">Index</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <h1 id="reversing-the-construction-of-the-view-projection-matrix-game-engine-reversing">Reversing The Construction Of The View-Projection Matrix (Game Engine Reversing)</h1>
+
+<p>Welcome to my write-up series on reverse engineering the Rendering pipeline of an AAA game.</p>
+
+<h2 id="parts">Parts</h2>
+
+<ul>
+  <li><a href="/ViewProj-Blog/part-1-intro">Part 1: Introduction</a></li>
+  <li>
+    <div style="color:#6495ED">Part 2: Understanding 3D Transformation Matrices</div>
+    <ul>
+      <li><a href="/ViewProj-Blog/part-2.1-view-matrix">Part 2.1: View Matrix</a></li>
+      <li><a href="/ViewProj-Blog/part-2.2-projection-matrix">Part 2.2: Projection Matrix</a></li>
+      <li><a href="/ViewProj-Blog/part-2.3-View-Projection-matrix">Part 2.3: View Projection Matrix</a></li>
+    </ul>
+  </li>
+  <li><a href="/ViewProj-Blog/part-3-finding-and-reversing-matrices">Part 3: Finding &amp; Reversing Matrices</a></li>
+  <li>
+    <div style="color:#6495ED">Part 4: Dissecting the Game’s Matrix Construction Pipeline And SIMD Math</div>
+    <ul>
+      <li><a href="/ViewProj-Blog/part-4.1-tracing-matrix-construction">Part 4.1: Tracing the Matrix Construction Path</a></li>
+      <li><a href="/ViewProj-Blog/part-4.2-reversing-simd-instrustions">Part 4.2: Reversing SIMD Instructions for Matrix Math</a></li>
+      <li><a href="/ViewProj-Blog/part-4.3-completing-view-proj-matrix">Part 4.3: Completing the View-Projection Matrix</a></li>
+      <li><a href="/ViewProj-Blog/part-4.4-optimizing-redundant-simd-instructions">Part 4.4: Optimizing Redundant SIMD Instructions (For Fun)</a></li>
+      <li><a href="/ViewProj-Blog/part-4.5-detour-hooking-simd-operations">Part 4.5: Detour Hooking to Optimize SIMD Operations (For Fun)</a></li>
+    </ul>
+  </li>
+  <li><a href="/ViewProj-Blog/part-5-trampoline-hooking">Part 5: Trampoline Hooking to Capture Entity Positions</a></li>
+  <li><a href="/ViewProj-Blog/part-6-w2s">Part 6: World To Screen Explanation And Code</a></li>
+  <li><a href="/ViewProj-Blog/part-7-final-esp">Part 7: Final ESP with Imgui</a></li>
+</ul>
+
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/ViewProj-Blog/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Reversing The ViewProjection Matrix</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">z1rp</li><li><a class="u-email" href="mailto:Zer0_1rp@proton.me">Zer0_1rp@proton.me</a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Reverse Engineering the ViewProjection Pipeline in Ghost of Tsushima</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>
+

@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>4.4: Optimizing Redundant SIMD Instructions | Reversing The ViewProjection Matrix</title>
+<meta name="generator" content="Jekyll v4.4.1" />
+<meta property="og:title" content="4.4: Optimizing Redundant SIMD Instructions" />
+<meta name="author" content="z1rp" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Reverse Engineering the ViewProjection Pipeline in Ghost of Tsushima" />
+<meta property="og:description" content="Reverse Engineering the ViewProjection Pipeline in Ghost of Tsushima" />
+<link rel="canonical" href="http://localhost:4000/ViewProj-Blog/part-4.4-optimizing-redundant-simd-instructions/" />
+<meta property="og:url" content="http://localhost:4000/ViewProj-Blog/part-4.4-optimizing-redundant-simd-instructions/" />
+<meta property="og:site_name" content="Reversing The ViewProjection Matrix" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2025-07-17T00:00:00+05:30" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="4.4: Optimizing Redundant SIMD Instructions" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"z1rp"},"dateModified":"2025-07-17T00:00:00+05:30","datePublished":"2025-07-17T00:00:00+05:30","description":"Reverse Engineering the ViewProjection Pipeline in Ghost of Tsushima","headline":"4.4: Optimizing Redundant SIMD Instructions","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/ViewProj-Blog/part-4.4-optimizing-redundant-simd-instructions/"},"url":"http://localhost:4000/ViewProj-Blog/part-4.4-optimizing-redundant-simd-instructions/"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/ViewProj-Blog/assets/css/style.css">
+  <link rel="stylesheet" href="/ViewProj-Blog/assets/css/syntax.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/ViewProj-Blog/feed.xml" title="Reversing The ViewProjection Matrix" /></head>
+<!-- ✅ MathJax setup -->
+  <script>
+    MathJax = {
+      tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <!-- ✅ End MathJax setup -->
+
+  <body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/ViewProj-Blog/">Reversing The ViewProjection Matrix</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/ViewProj-Blog/">Index</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">4.4: Optimizing Redundant SIMD Instructions</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2025-07-17T00:00:00+05:30" itemprop="datePublished">Jul 17, 2025
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <style>
+.asm64-code {
+  background: #1e1e1e;
+  color: #c5c8c6;
+  padding: 12px;
+  border-radius: 8px;
+  font-family: "Cascadia Code", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 14px;
+  line-height: 1.45;
+  overflow-x: auto;
+  white-space: pre;
+}
+
+/* Assembly token styles */
+.asm64-code .kw     { color: #d78700; font-weight: 600; }   /* opcodes like mov, add */
+.asm64-code .reg    { color: #5fafaf; }                     /* registers like rax, rcx */
+.asm64-code .mem    { color: #af87d7; }                     /* memory refs like [rbx+8] */
+.asm64-code .num    { color: #b5cea8; }                     /* numbers / hex */
+.asm64-code .label  { color: #ffaf5f; }                     /* labels or jumps */
+.asm64-code .comment{ color: #6a9955; font-style: italic; } /* comments */
+.asm64-code .const  { color: #ce9178; }                     /* static strings or constants */
+</style>
+
+<style>
+.ida-code{
+  background:#1e1e1e;
+  color:#dcdcdc;
+  padding:12px;
+  border-radius:8px;
+  font-family: Consolas, "Liberation Mono", Menlo, monospace;
+  font-size:14px;
+  line-height:1.4;
+  overflow-x:auto;
+  white-space: pre; /* preserve spaces and linebreaks */
+}
+
+/* token classes you can use inside the div */
+.ida-code .kw    { color:#569cd6; } /* keywords */
+.ida-code .type  { color:#4ec9b0; } /* types */
+.ida-code .fn    { color:#dcdcaa; } /* functions / intrinsics */
+.ida-code .num   { color:#b5cea8; } /* numbers / hex */
+.ida-code .var   { color:#9cdcfe; } /* variables */
+.ida-code .const { color:#ce9178; } /* globals / constants */
+.ida-code .comment{ color:#6a9955; font-style:italic; }
+</style>
+
+<p>Now it’s time to optimize all the redundant SIMD operations we have seen till now.</p>
+<blockquote>
+  <p>Expect no performance gain this is only for a learning experience.</p>
+</blockquote>
+
+<p>Just for a refresher we took a bottom up approach on finding functions responsible for finding the Construction Function.</p>
+
+<p><strong>Function traced back from:</strong></p>
+
+<p>sub_9AA040-&gt;sub_sub_7FBF10-&gt;sub_7FD060</p>
+
+<p>Let’s First try to optimize sub_7FD060 which we previously renamed to ProjXViewMul.</p>
+
+<p>The redundant or overly complicated SIMD function was:</p>
+
+<div class="ida-code"> <span class="var">v16</span>[<span class="num">3</span>] = <span class="fn">_mm_add_ps</span>(
+             <span class="fn">_mm_add_ps</span>(
+               <span class="fn">_mm_add_ps</span>(
+		 <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>((<span class="type">__m128</span>)<span class="var">Mask_0001f</span>, (<span class="type">__m128</span>)<span class="var">Mask_0001f</span>, <span class="num">0</span>), <span class="var">ProjMat_0</span>), 
+		 <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>((<span class="type">__m128</span>)<span class="var">Mask_0001f</span>, (<span class="type">__m128</span>)<span class="var">Mask_0001f</span>, <span class="num">0x55</span>), <span class="var">ProjMat_1</span>)),
+               <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>((<span class="type">__m128</span>)<span class="var">Mask_0001f</span>, (<span class="type">__m128</span>)<span class="var">Mask_0001f</span>, <span class="num">0xAA</span>), <span class="var">ProjMat_2</span>)),
+             <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>((<span class="type">__m128</span>)<span class="var">Mask_0001f</span>, (<span class="type">__m128</span>)<span class="var">Mask_0001f</span>, <span class="num">0xFF</span>), <span class="var">ProjMat_3</span>));
+</div>
+
+<p>we can change this to achieve the same functionality by simply doing:</p>
+
+<div class="ida-code"> <span class="var">v16</span>[<span class="num">3</span>] = <span class="var">ProjMat_3</span>
+</div>
+
+<p>But we cannot just type it into pseudo code, we need to patch it manually in assembly.</p>
+
+<h3 id="finding-assembly-responsible-for-this-function">Finding Assembly responsible for this function:</h3>
+
+<p>To find assembly instructions corresponds to out pseudo-code we will use IDA’s synchronize function.</p>
+
+<p><img src="/ViewProj-Blog/assets/images/part-4.4/synchronize_ida.png" alt="ESP-Image1" /></p>
+
+<p>Highlighting what we are looking for:</p>
+
+<p><img src="/ViewProj-Blog/assets/images/part-4.4/synchronize_selection_ida.png" alt="ESP-Image1" /></p>
+
+<p>Now we see the corresponding assembly:</p>
+
+<p><img src="/ViewProj-Blog/assets/images/part-4.4/synchronize_ida_asm.png" alt="ESP-Image1" /></p>
+
+<p>here i will just do the quick and easy method of nopping out every instruction we don’t need, see which xmm register holds ProjMat_3 
+and simply storing it:</p>
+
+<div class="asm64-code"><span class="kw">movaps</span> <span class="reg">v16</span>[3], <span class="reg">xmm</span>
+</div>
+
+<p>Let’s see which xmm register holds ProjMat_3</p>
+
+<div class="ida-code"><span class="var">ProjMat_3</span> = *(<span class="type">__m128</span>*)(<span class="var">camStruct</span> + <span class="num">0x230</span>);
+</div>
+
+<p>Highlight this like before and we see it corresponds to:</p>
+
+<div class="asm64-code"><span class="kw">movups</span> <span class="reg">xmm10</span>, <span class="reg">xmmword ptr</span> <span class="mem">[rcx+230h]</span> 
+</div>
+
+<p>making sure xmm10 is not changed along the way and we can just store it directly at:</p>
+
+<p><img src="/ViewProj-Blog/assets/images/part-4.4/v16_storing.png" alt="ESP-Image1" /></p>
+
+<p>xmm11 is the calculated output of the enitre Vec4 x Mat4x4, chaning this to xmm10 will achive the same function.</p>
+
+<p>we will nop out all other instructions:</p>
+
+<h3 id="nopping-instructions">Nopping Instructions:</h3>
+
+<div class="asm64-code"><span class="kw">movups</span>  <span class="reg">xmm4</span>, <span class="mem">cs:Mask_0001f</span>
+<span class="kw">movaps</span>  <span class="reg">xmm11</span>, <span class="reg">xmm4</span>
+<span class="kw">shufps</span>  <span class="reg">xmm11</span>, <span class="reg">xmm4</span>, <span class="num">0</span>
+<span class="kw">movaps</span>  <span class="reg">xmm0</span>, <span class="reg">xmm4</span>
+<span class="kw">mulps</span>   <span class="reg">xmm11</span>, <span class="reg">xmm6</span>
+<span class="kw">shufps</span>  <span class="reg">xmm0</span>, <span class="reg">xmm4</span>, <span class="num">55h</span> <span class="comment">; 'U'</span>
+<span class="kw">mulps</span>   <span class="reg">xmm0</span>, <span class="reg">xmm7</span>
+<span class="kw">movaps</span>  <span class="reg">xmm1</span>, <span class="reg">xmm4</span>
+<span class="kw">shufps</span>  <span class="reg">xmm1</span>, <span class="reg">xmm4</span>, <span class="num">0AAh</span>
+<span class="kw">addps</span>   <span class="reg">xmm11</span>, <span class="reg">xmm0</span>
+<span class="kw">mulps</span>   <span class="reg">xmm1</span>, <span class="reg">xmm9</span>
+<span class="kw">shufps</span>  <span class="reg">xmm4</span>, <span class="reg">xmm4</span>, <span class="num">0FFh</span>
+<span class="kw">addps</span>   <span class="reg">xmm11</span>, <span class="reg">xmm1</span>
+<span class="kw">mulps</span>   <span class="reg">xmm4</span>, <span class="reg">xmm10</span>
+<span class="kw">addps</span>   <span class="reg">xmm11</span>, <span class="reg">xmm4</span>
+</div>
+
+<p>all these are going to nopped out.</p>
+
+<p>Now we are going to nop all these out and change xmm11 to xmm10 in the final movaps in cheat engine and see if it works as intended.</p>
+
+<p><img src="/ViewProj-Blog/assets/images/part-4.4/assembly_patch_v16.png" alt="ESP-Image1" /></p>
+
+<p><img src="/ViewProj-Blog/assets/images/part-4.4/ce_nops.png" alt="ESP-Image1" /></p>
+
+<h3 id="result">Result?</h3>
+
+<p>Game runs as we suspected without any artifacts in game or in UI:</p>
+
+<p><img src="/ViewProj-Blog/assets/images/part-4.4/game_runs.gif" alt="ESP-Image1" /></p>
+
+
+  </div><a class="u-url" href="/ViewProj-Blog/part-4.4-optimizing-redundant-simd-instructions/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/ViewProj-Blog/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Reversing The ViewProjection Matrix</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">z1rp</li><li><a class="u-email" href="mailto:Zer0_1rp@proton.me">Zer0_1rp@proton.me</a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Reverse Engineering the ViewProjection Pipeline in Ghost of Tsushima</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>
+

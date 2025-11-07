@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.8.0 -->
+<title>Part 4.1: Tracing the Matrix Construction Path | Reversing The ViewProjection Matrix</title>
+<meta name="generator" content="Jekyll v4.4.1" />
+<meta property="og:title" content="Part 4.1: Tracing the Matrix Construction Path" />
+<meta name="author" content="z1rp" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Reverse Engineering the ViewProjection Pipeline in Ghost of Tsushima" />
+<meta property="og:description" content="Reverse Engineering the ViewProjection Pipeline in Ghost of Tsushima" />
+<link rel="canonical" href="http://localhost:4000/ViewProj-Blog/part-4.1-tracing-matrix-construction/" />
+<meta property="og:url" content="http://localhost:4000/ViewProj-Blog/part-4.1-tracing-matrix-construction/" />
+<meta property="og:site_name" content="Reversing The ViewProjection Matrix" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2025-07-17T00:00:00+05:30" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Part 4.1: Tracing the Matrix Construction Path" />
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"z1rp"},"dateModified":"2025-07-17T00:00:00+05:30","datePublished":"2025-07-17T00:00:00+05:30","description":"Reverse Engineering the ViewProjection Pipeline in Ghost of Tsushima","headline":"Part 4.1: Tracing the Matrix Construction Path","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/ViewProj-Blog/part-4.1-tracing-matrix-construction/"},"url":"http://localhost:4000/ViewProj-Blog/part-4.1-tracing-matrix-construction/"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/ViewProj-Blog/assets/css/style.css">
+  <link rel="stylesheet" href="/ViewProj-Blog/assets/css/syntax.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/ViewProj-Blog/feed.xml" title="Reversing The ViewProjection Matrix" /></head>
+<!-- ✅ MathJax setup -->
+  <script>
+    MathJax = {
+      tex: { inlineMath: [['$', '$'], ['\\(', '\\)']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <!-- ✅ End MathJax setup -->
+
+  <body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/ViewProj-Blog/">Reversing The ViewProjection Matrix</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/ViewProj-Blog/">Index</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Part 4.1: Tracing the Matrix Construction Path</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2025-07-17T00:00:00+05:30" itemprop="datePublished">Jul 17, 2025
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <style>
+.ida-code{
+  background:#1e1e1e;
+  color:#dcdcdc;
+  padding:12px;
+  border-radius:8px;
+  font-family: Consolas, "Liberation Mono", Menlo, monospace;
+  font-size:14px;
+  line-height:1.4;
+  overflow-x:auto;
+  white-space: pre; /* preserve spaces and linebreaks */
+}
+
+/* token classes you can use inside the div */
+.ida-code .kw    { color:#569cd6; } /* keywords */
+.ida-code .type  { color:#4ec9b0; } /* types */
+.ida-code .fn    { color:#dcdcaa; } /* functions / intrinsics */
+.ida-code .num   { color:#b5cea8; } /* numbers / hex */
+.ida-code .var   { color:#9cdcfe; } /* variables */
+.ida-code .const { color:#ce9178; } /* globals / constants */
+.ida-code .comment{ color:#6a9955; font-style:italic; }
+</style>
+
+<h3 id="tracing-functions-writing-to-the-view-projection-matrix">Tracing Functions Writing to The View-Projection Matrix</h3>
+
+<p>Lets start by observing which function writes to the View-Projection Matrix by clicking on the “Find out what writes this address” on the first element
+of the View-Projection Matrix.</p>
+
+<p><img src="/ViewProj-Blog/assets/images/part-4.1/find-what-writes-vpmatrix.png" alt="ESP-Image1" /></p>
+
+<p>We have found 2 different functions that seem to write to this address.
+<img src="/ViewProj-Blog/assets/images/part-4.1/found-what-writes-vpmatrix.png" alt="ESP-Image1" /></p>
+
+<p>The first instruction seems to reference an address “VCRUNTIME140.memset+134:” and the second one references “GhostOfTsushima.exe+9AA0AF:”.<br />
+The second instruction intrigues me more so lets look at that one.<br />
+<img src="/ViewProj-Blog/assets/images/part-4.1/9aa082-ins-asm-ce.png" alt="ESP-Image1" /></p>
+
+<p>Here [rdi+0x5C0] is our static memory address of the view projection matrix and is getting written into by “xmm0”.</p>
+
+<blockquote>
+  <p>On x64, you’ll often see xmm0–xmm15 in the disassembly. These are 128-bit registers the CPU uses for SIMD (“Single Instruction, Multiple Data”) work, 
+basically crunching multiple floats at once (4-32bit floats). Games use these for stuff like matrix math, vector transforms, and physics, 
+because it’s faster than doing one number at a time.</p>
+</blockquote>
+
+<p>Lets now see where “xmm0” gets its 4, 32bit float values from. In the instruction just above we see “xmm0” gets its value from<br />
+“movups xmm0,[rax+00000240]” which means [rax+00000240] would be where it seems to copy the values from.</p>
+
+<p><strong>lets see this entire function in IDA before moving further</strong></p>
+
+<p>lets “select current function” in cheat engine to get the function start address which is “GhostOfTsushima.exe+9AA040”.<br />
+Lets put this in IDA and see its pseudo-code.
+<img src="/ViewProj-Blog/assets/images/part-4.1/ida-view-9aa082.png" alt="ESP-Image1" /></p>
+
+<blockquote>
+  <p>Don’t forget to rebase IDA to “0” before searching for the address in the function sub-view!<br />
+Alternatively, you can calculate the offset between the Cheat Engine base and the IDA base manually using a calculator.</p>
+</blockquote>
+
+<p>While stepping through the function, I didn’t encounter many SIMD instructions like “mm_mul”, “mm_add_ps”, or “mm_shuffle_ps” (only a few).
+Instead, it appears that the function is primarily copying matrices from dynamic memory into this static location,  possibly from a 
+camera struct or a similar source.</p>
+
+<p>Let’s now see what function writes to the dynamic address that its copying from [rax+0x240].
+<img src="/ViewProj-Blog/assets/images/part-4.1/matrix-copy-ins-write.png" alt="ESP-Image1" /></p>
+
+<p>We can see one instruction reference “GhostOfTsushima.exe+7FC11B:”. Let’s select the current function and plug it into ida to see its pseudo code.</p>
+
+<div class="ida-code"><span class="kw">char</span> <span class="kw">__fastcall</span> <span class="fn">sub_7FBF10</span>(<span class="type">__int64</span> <span class="var">a1</span>, <span class="type">__m128</span> *<span class="var">a2</span>, <span class="type">__m128</span> *<span class="var">a3</span>)
+{
+  *(<span class="type">__m128</span> *)(<span class="var">a1</span> + <span class="num">0x550</span>) = *<span class="var">a2</span>;
+  *(<span class="type">__m128</span> *)(<span class="var">a1</span> + <span class="num">0x430</span>) = *<span class="var">a3</span>;
+  *(<span class="type">__m128</span> *)(<span class="var">a1</span> + <span class="num">0x440</span>) = <span class="var">a3</span>[<span class="num">1</span>];
+  *(<span class="type">__m128</span> *)(<span class="var">a1</span> + <span class="num">0x450</span>) = <span class="var">a3</span>[<span class="num">2</span>];
+  *(<span class="type">__m128</span> *)(<span class="var">a1</span> + <span class="num">0x460</span>) = <span class="var">a3</span>[<span class="num">3</span>];
+  <span class="fn">sub_938210</span>(<span class="var">a3</span>, <span class="var">a1</span> + <span class="num">0x4B0</span>);
+  <span class="var">result</span> = <span class="fn">_mm_movemask_ps</span>(<span class="fn">_mm_cmplt_ps</span>(*(<span class="type">__m128</span> *)<span class="fn">sub_7CD6F0</span>(&amp;<span class="var">v21</span>, <span class="var">a1</span> + <span class="num">0x430</span>), (<span class="type">__m128</span>)<span class="num">0LL</span>)) == <span class="num">15</span>;
+  *(_BYTE *)(<span class="var">a1</span> + <span class="num">0x770</span>) = <span class="var">result</span>;
+  <span class="var">v7</span> = <span class="var">a3</span>[<span class="num">1</span>];
+  <span class="var">v8</span> = *<span class="var">a3</span>;
+  <span class="var">v9</span> = <span class="fn">_mm_sub_ps</span>((<span class="type">__m128</span>)<span class="num">0LL</span>, <span class="fn">_mm_and_ps</span>((<span class="type">__m128</span>)<span class="const">NaNNaNNaN0f_Mask</span>, *<span class="var">a2</span>));
+  <span class="var">v10</span> = <span class="var">a3</span>[<span class="num">2</span>];
+  <span class="var">v11</span> = <span class="var">a3</span>[<span class="num">3</span>];
+  <span class="var">v12</span> = <span class="fn">_mm_and_ps</span>((<span class="type">__m128</span>)<span class="const">xmmword_1138D00</span>, (<span class="type">__m128</span>)<span class="const">NaNNaNNaN0f_Mask</span>);
+  <span class="var">v13</span> = <span class="fn">_mm_and_ps</span>((<span class="type">__m128</span>)<span class="const">xmmword_1138CF0</span>, (<span class="type">__m128</span>)<span class="const">NaNNaNNaN0f_Mask</span>);
+  <span class="var">v14</span> = <span class="fn">_mm_shuffle_ps</span>(<span class="var">v9</span>, <span class="fn">_mm_shuffle_ps</span>((<span class="type">__m128</span>)<span class="const">Mask_1111f</span>, <span class="var">v9</span>, <span class="num">160</span>), <span class="num">36</span>);
+  <span class="var">v15</span> = <span class="fn">_mm_and_ps</span>((<span class="type">__m128</span>)<span class="const">xmmword_1138CE0</span>, (<span class="type">__m128</span>)<span class="const">NaNNaNNaN0f_Mask</span>);
+  <span class="var">v16</span> = <span class="fn">_mm_shuffle_ps</span>(<span class="var">v14</span>, <span class="fn">_mm_shuffle_ps</span>((<span class="type">__m128</span>)<span class="const">Mask_1111f</span>, <span class="var">v14</span>, <span class="num">160</span>), <span class="num">36</span>);
+  <span class="var">v17</span> = <span class="fn">_mm_add_ps</span>(
+          <span class="fn">_mm_add_ps</span>(
+            <span class="fn">_mm_add_ps</span>(<span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">v16</span>, <span class="var">v16</span>, <span class="num">85</span>), <span class="var">v7</span>), <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">v16</span>, <span class="var">v16</span>, <span class="num">0</span>), *<span class="var">a3</span>)),
+            <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">v16</span>, <span class="var">v16</span>, <span class="num">170</span>), <span class="var">v10</span>)),
+          <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">v16</span>, <span class="var">v16</span>, <span class="num">255</span>), <span class="var">v11</span>));
+  <span class="var">v18</span> = <span class="fn">_mm_add_ps</span>(<span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">v13</span>, <span class="var">v13</span>, <span class="num">85</span>), <span class="var">v7</span>), <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">v13</span>, <span class="var">v13</span>, <span class="num">0</span>), *<span class="var">a3</span>));
+  *(<span class="type">__m128</span> *)(<span class="var">a1</span> + <span class="num">0x260</span>) = <span class="fn">_mm_add_ps</span>(
+                              <span class="fn">_mm_add_ps</span>(
+                                <span class="fn">_mm_add_ps</span>(
+                                  <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">v12</span>, <span class="var">v12</span>, <span class="num">85</span>), <span class="var">v7</span>),
+                                  <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">v12</span>, <span class="var">v12</span>, <span class="num">0</span>), *<span class="var">a3</span>)),
+                                <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">v12</span>, <span class="var">v12</span>, <span class="num">170</span>), <span class="var">v10</span>)),
+                              <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">v12</span>, <span class="var">v12</span>, <span class="num">255</span>), <span class="var">v11</span>));
+  *(<span class="type">__m128</span> *)(<span class="var">a1</span> + <span class="num">0x270</span>) = <span class="var">v17</span>;
+  *(<span class="type">__m128</span> *)(<span class="var">a1</span> + <span class="num">0x250</span>) = <span class="fn">_mm_add_ps</span>(..............
+</div>
+
+<blockquote>
+  <p>This is just a snippet of the start of the function.</p>
+</blockquote>
+
+<h3 id="windows-calling-conventions-abi">Windows Calling Conventions (ABI)</h3>
+
+<p>On Windows x64, functions follow the Microsoft x64 calling convention. That means the first four parameters are passed in registers:</p>
+
+<ul>
+  <li>RCX → first argument (a1)</li>
+  <li>RDX → second argument (a2)</li>
+  <li>R8 → third argument (a3)</li>
+  <li>R9 → fourth argument (a4)</li>
+</ul>
+
+<p>If there are more than four, the extras get pushed onto the stack. The return value usually ends up in RAX.</p>
+
+<p>So if we see a function labeled with a1, a2, a3, those are just the values RCX, RDX, and R8 were holding when the function was called.</p>
+
+<h3 id="breakpoint--stacktrace">Breakpoint &amp; Stacktrace</h3>
+
+<p>To figure out exactly what’s being passed in, we can set a breakpoint right at the start of the function in Cheat Engine, then check those registers. 
+That’ll give us a live snapshot of the arguments 
+<img src="/ViewProj-Blog/assets/images/part-4.1/ce-7fbf10-breakpoint.png" alt="ESP-Image1" /></p>
+
+<p>For now, the only argument of interest is a1, which corresponds to RCX. In this particular call, RCX = 0x2D72494D200.<br />
+I consider it “interesting” because of the following code snippet:</p>
+
+<div class="ida-code">  *(<span class="type">__m128</span> *)(<span class="var">a1</span> + <span class="num">0x550</span>) = *<span class="var">a2</span>;
+  *(<span class="type">__m128</span> *)(<span class="var">a1</span> + <span class="num">0x430</span>) = *<span class="var">a3</span>;
+  *(<span class="type">__m128</span> *)(<span class="var">a1</span> + <span class="num">0x440</span>) = <span class="var">a3</span>[<span class="num">1</span>];
+  *(<span class="type">__m128</span> *)(<span class="var">a1</span> + <span class="num">0x450</span>) = <span class="var">a3</span>[<span class="num">2</span>];
+  *(<span class="type">__m128</span> *)(<span class="var">a1</span> + <span class="num">0x460</span>) = <span class="var">a3</span>[<span class="num">3</span>];
+</div>
+<p>looking through the function we notice that it loads a single 4x4 matrix and a Vector4 near the start.<br />
+Let’s inspect the values at those offsets in memory.<br />
+At [a1 + 0x430], we find what appears to be a ViewProjection matrix without the translation component:<br />
+<img src="/ViewProj-Blog/assets/images/part-4.1/reclass-view-proj-no-trans.png" alt="ESP-Image1" /></p>
+
+<p>And at [a1 + 0x550], we find a Vector4 that corresponds to the camera position: <br />
+<img src="/ViewProj-Blog/assets/images/part-4.1/reclass-cam-pos.png" alt="ESP-Image1" /></p>
+
+<p>Since this function receives the view-projection matrix (without translation) as input, we can reasonably guess that the actual 
+multiplication of the View and Projection matrices happens somewhere earlier in the call stack. this function isn’t building the full VP 
+matrix from scratch, it’s taking an intermediate version and adding the translation part to make the final matrix the renderer uses.</p>
+
+<blockquote>
+  <p>We’ll break down this function in detail later, but for now, our goal is to trace the data flow further upstream to locate where 
+this matrix begins its construction.</p>
+</blockquote>
+
+<p>Let’s breakpoint at the start of the function and use the “stack trace” feature in cheat engine.<br />
+<img src="/ViewProj-Blog/assets/images/part-4.1/ce-stack-trace-realfunc.png" alt="ESP-Image1" /></p>
+
+<p>The first function is the function we are inside of.<br />
+The instruction at GhostOfTsushima.exe+7FD233 belongs to the function that called our current function (0x7FBF10).</p>
+
+<p>We’ll grab the start address of the caller and plug it inside of IDA for further analysis.</p>
+
+<h3 id="ida-code">IDA Code:</h3>
+
+<div class="ida-code"><span class="kw">char</span> <span class="kw">__fastcall</span> <span class="fn">sub_7FD060</span>(<span class="type">__int64</span> <span class="var">a1</span>)
+{
+  <span class="type">__m128</span> <span class="var">v1</span>; <span class="comment">// xmm7</span>
+  <span class="type">__m128</span> <span class="var">v2</span>; <span class="comment">// xmm1</span>
+  <span class="type">__m128</span> <span class="var">v3</span>; <span class="comment">// xmm6</span>
+  <span class="type">__m128</span> <span class="var">v4</span>; <span class="comment">// xmm2</span>
+  <span class="type">__m128</span> <span class="var">v5</span>; <span class="comment">// xmm9</span>
+  <span class="type">__m128</span> <span class="var">v6</span>; <span class="comment">// xmm10</span>
+  <span class="type">__m128</span> <span class="var">v7</span>; <span class="comment">// xmm13</span>
+  <span class="type">__m128</span> <span class="var">v8</span>; <span class="comment">// xmm12</span>
+  <span class="type">__m128</span> <span class="var">v9</span>; <span class="comment">// xmm5</span>
+  <span class="type">__m128</span> <span class="var">v10</span>; <span class="comment">// xmm12</span>
+  <span class="type">__m128</span> <span class="var">v11</span>; <span class="comment">// xmm5</span>
+  <span class="type">__m128</span> <span class="var">v12</span>; <span class="comment">// xmm8</span>
+  <span class="type">__m128</span> <span class="var">v13</span>; <span class="comment">// xmm12</span>
+  <span class="type">__m128</span> <span class="var">v15</span>; <span class="comment">// [rsp+20h] [rbp-E8h] BYREF</span>
+  <span class="type">__m128</span> <span class="var">v16</span>[<span class="num">4</span>]; <span class="comment">// [rsp+30h] [rbp-D8h] BYREF</span>
+
+  <span class="var">v1</span> = *(<span class="type">__m128</span> *)(<span class="var">a1</span> + <span class="num">0x210</span>);
+  <span class="var">v2</span> = <span class="fn">_mm_and_ps</span>((<span class="type">__m128</span>)<span class="const">xmmword_1138D50</span>, *(<span class="type">__m128</span> *)(<span class="var">a1</span> + <span class="num">0x160</span>));
+  <span class="var">v3</span> = *(<span class="type">__m128</span> *)(<span class="var">a1</span> + <span class="num">0x200</span>);
+  <span class="var">v4</span> = <span class="fn">_mm_and_ps</span>((<span class="type">__m128</span>)<span class="const">xmmword_1138D50</span>, *(<span class="type">__m128</span> *)(<span class="var">a1</span> + <span class="num">0x140</span>));
+  <span class="var">v5</span> = *(<span class="type">__m128</span> *)(<span class="var">a1</span> + <span class="num">0x220</span>);
+  <span class="var">v6</span> = *(<span class="type">__m128</span> *)(<span class="var">a1</span> + <span class="num">0x230</span>);
+  <span class="var">v7</span> = <span class="fn">_mm_shuffle_ps</span>(
+         *(<span class="type">__m128</span> *)(<span class="var">a1</span> + <span class="num">0x170</span>),
+         <span class="fn">_mm_shuffle_ps</span>((<span class="type">__m128</span>)<span class="const">xmmword_10F0E70</span>, *(<span class="type">__m128</span> *)(<span class="var">a1</span> + <span class="num">0x170</span>), <span class="num">160</span>),
+         <span class="num">36</span>);
+  <span class="var">v8</span> = <span class="fn">_mm_sub_ps</span>((<span class="type">__m128</span>)<span class="num">0LL</span>, <span class="fn">_mm_and_ps</span>((<span class="type">__m128</span>)<span class="const">xmmword_1138D50</span>, *(<span class="type">__m128</span> *)(<span class="var">a1</span> + <span class="num">0x150</span>)));
+  <span class="var">v9</span> = <span class="fn">_mm_unpackhi_ps</span>(<span class="var">v8</span>, <span class="var">v2</span>);
+  <span class="var">v10</span> = <span class="fn">_mm_unpacklo_ps</span>(<span class="var">v8</span>, <span class="var">v2</span>);
+  <span class="var">v11</span> = <span class="fn">_mm_and_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">v9</span>, <span class="var">v4</span>, <span class="num">0x24</span>), (<span class="type">__m128</span>)<span class="const">xmmword_1138D50</span>);
+  <span class="var">v12</span> = <span class="fn">_mm_and_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">v10</span>, <span class="var">v4</span>, <span class="num">0x1E</span>), (<span class="type">__m128</span>)<span class="const">xmmword_1138D50</span>);
+  <span class="var">v13</span> = <span class="fn">_mm_and_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">v10</span>, <span class="var">v4</span>, <span class="num">4</span>), (<span class="type">__m128</span>)<span class="const">xmmword_1138D50</span>);
+  <span class="var">v16</span>[<span class="num">1</span>] = <span class="fn">_mm_add_ps</span>(
+             <span class="fn">_mm_add_ps</span>(
+               <span class="fn">_mm_add_ps</span>(<span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">v12</span>, <span class="var">v12</span>, <span class="num">0</span>), <span class="var">v3</span>), <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">v12</span>, <span class="var">v12</span>, <span class="num">0x55</span>), <span class="var">v1</span>)),
+               <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">v12</span>, <span class="var">v12</span>, <span class="num">0xAA</span>), <span class="var">v5</span>)),
+             <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">v12</span>, <span class="var">v12</span>, <span class="num">0xFF</span>), <span class="var">v6</span>));
+  <span class="var">v16</span>[<span class="num">2</span>] = <span class="fn">_mm_add_ps</span>(
+             <span class="fn">_mm_add_ps</span>(
+               <span class="fn">_mm_add_ps</span>(<span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">v11</span>, <span class="var">v11</span>, <span class="num">0</span>), <span class="var">v3</span>), <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">v11</span>, <span class="var">v11</span>, <span class="num">0x55</span>), <span class="var">v1</span>)),
+               <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">v11</span>, <span class="var">v11</span>, <span class="num">0xAA</span>), <span class="var">v5</span>)),
+             <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">v11</span>, <span class="var">v11</span>, <span class="num">0xFF</span>), <span class="var">v6</span>));
+  <span class="var">v16</span>[<span class="num">3</span>] = <span class="fn">_mm_add_ps</span>(
+             <span class="fn">_mm_add_ps</span>(
+               <span class="fn">_mm_add_ps</span>(
+                 <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>((<span class="type">__m128</span>)<span class="const">xmmword_1138D10</span>, (<span class="type">__m128</span>)<span class="const">xmmword_1138D10</span>, <span class="num">0</span>), <span class="var">v3</span>),
+                 <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>((<span class="type">__m128</span>)<span class="const">xmmword_1138D10</span>, (<span class="type">__m128</span>)<span class="const">xmmword_1138D10</span>, <span class="num">0x55</span>), <span class="var">v1</span>)),
+               <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>((<span class="type">__m128</span>)<span class="const">xmmword_1138D10</span>, (<span class="type">__m128</span>)<span class="const">xmmword_1138D10</span>, <span class="num">0xAA</span>), <span class="var">v5</span>)),
+             <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>((<span class="type">__m128</span>)<span class="const">xmmword_1138D10</span>, (<span class="type">__m128</span>)<span class="const">xmmword_1138D10</span>, <span class="num">0xFF</span>), <span class="var">v6</span>));
+  <span class="var">v15</span> = <span class="var">v7</span>;
+  <span class="var">v16</span>[<span class="num">0</span>] = <span class="fn">_mm_add_ps</span>(
+             <span class="fn">_mm_add_ps</span>(
+               <span class="fn">_mm_add_ps</span>(<span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">v13</span>, <span class="var">v13</span>, <span class="num">0</span>), <span class="var">v3</span>), <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">v13</span>, <span class="var">v13</span>, <span class="num">0x55</span>), <span class="var">v1</span>)),
+               <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">v13</span>, <span class="var">v13</span>, <span class="num">0xAA</span>), <span class="var">v5</span>)),
+             <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">v13</span>, <span class="var">v13</span>, <span class="num">0xFF</span>), <span class="var">v6</span>));
+  <span class="kw">return</span> <span class="fn">sub_7FBF10</span>(<span class="var">a1</span>, &amp;<span class="var">v15</span>, <span class="var">v16</span>);
+}
+</div>
+
+<p>This function takes a single argument, probably a pointer to the camera structure.<br />
+Notably, it accesses two 4x4 matrices</p>
+
+<p>[a1+0x200]:<br />
+<img src="/ViewProj-Blog/assets/images/part-4.1/a1+200-matrix.png" alt="ESP-Image1" /><br />
+This is just the Projection Matrix.</p>
+
+<p>[a1+0x140]:<br />
+<img src="/ViewProj-Blog/assets/images/part-4.1/a1+140-matrix.png" alt="ESP-Image1" /><br />
+This is just the Camera World Matrix.</p>
+
+<p>Throughout the function, we see use _mm_mul_ps, _mm_add_ps, and _mm_shuffle_ps popping up which is a indicator for SIMD matrix multiplication. 
+The v16 array, which is made up of __m128 values, is gradually filled with the result of these operations, effectively forming a 4x4 matrix.</p>
+
+<blockquote>
+  <h3 id="why-not-just-invert-it">Why Not Just Invert It?</h3>
+  <p>If you already have both the Projection and the View-Projection matrices you can simply compute the View matrix using <em>Matrix algebra</em>.<br />
+if:<br />
+\(\begin{align}VP = P \times V\end{align}\)<br />
+therefore:<br />
+\(\begin{align} V = P^{-1} \times VP\end{align}\)<br />
+This holds true if the game uses the standard column-vector convention.<br />
+If it uses row-vectors:<br />
+\(\begin{align}V = VP \times P^{-1}\end{align}\)<br />
+But this lacks the insight into how the engine computes it internally, So we are going to do it the Hard Way.</p>
+</blockquote>
+
+<p><em>Now that we have confirmed that this is probably the matrix construction function of the View-Projection matrix we can now start reversing 
+its many SIMD instructions to see what exactly it does with the camera world matrix and projection matrix.</em></p>
+
+
+  </div><a class="u-url" href="/ViewProj-Blog/part-4.1-tracing-matrix-construction/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/ViewProj-Blog/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Reversing The ViewProjection Matrix</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">z1rp</li><li><a class="u-email" href="mailto:Zer0_1rp@proton.me">Zer0_1rp@proton.me</a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Reverse Engineering the ViewProjection Pipeline in Ghost of Tsushima</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>
+
