@@ -218,7 +218,7 @@ It defines the camera’s local Z-axis</p>
 view space where Z goes into the screen), the view matrix uses the negative Z-axis, which would be (CameraPosition - LookAtTarget).normalized().</p>
 </blockquote>
 
-<p>These variables (eg: Right.x or forward.y etc) can map from <em>-1</em> to <em>1</em> or <em>0</em> to <em>1</em> depending on the graphics Api used (eg: directx/OpenGL).</p>
+<p>The components of orientation vectors (Right, Up, Forward) will always be in the range of -1.0 to 1.0.</p>
 
 <p><strong>Translation Vector:</strong><br />
 This translation vector basically tells the view matrix how to undo the camera’s position and orientation so that the world moves around the camera and not the other way around.
@@ -274,8 +274,10 @@ While a model matrix typically includes rotation, translation, and scale, the ca
 Structurally, they share the same layout, the camera world matrix is essentially a model matrix for the camera itself.</p>
 </blockquote>
 
-<p><strong>If you want to learn more about model, view and projection matrices you can check this OpenGL tutorial out:</strong><br />
-<a href="https://www.opengl-tutorial.org/beginners-tutorials/tutorial-3-matrices/#the-model-view-and-projection-matrices">OpenGL tutorial</a></p>
+<p><strong>If you want to learn more about model, view and projection matrices you can check out this OpenGL tutorial and this video which i found informative 
+explaining the math behind matrices and 3d graphics theory:</strong><br />
+<a href="https://www.opengl-tutorial.org/beginners-tutorials/tutorial-3-matrices">OpenGL tutorial</a><br />
+<a href="https://www.youtube.com/watch?v=wiYTxjJjfxs">In Video Games, The Player Never Moves</a></p>
 
 <p><em>All of these mathematical relationships, spatial orientations, and foundational concepts might seem unnecessary but they are crucial. We’ll
 rely on this knowledge to accurately identify the different matrices in memory, decode how the game constructs them, and understand exactly
@@ -303,7 +305,7 @@ how the camera views the world.</em></p>
 </div>
 
       <div class="footer-col footer-col-3">
-        <p>Reverse Engineering the ViewProjection Pipeline in Ghost of Tsushima</p>
+        <p>Reversing The Construction Of The View-Projection Matrix</p>
       </div>
     </div>
 

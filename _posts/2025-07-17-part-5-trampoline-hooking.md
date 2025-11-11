@@ -130,14 +130,14 @@ I'm going to use the second instruction seen here just due to it being the most 
 Looking at the disassembly:
 ![ESP-Image1](/ViewProj-Blog/assets/images/part-5/ce_disassmbly_zaxis.png)
 
-Let's start counting how many bytes we need. We require 13 bytes for a full, mov reg; jmp reg hook.  
+Let's start counting how many bytes we need. We require 12 bytes for a full, mov reg; jmp reg hook.  
 Counting bytes we get:
 
 ![ESP-Image1](/ViewProj-Blog/assets/images/part-5/ce_disassmbly_zaxis - Copy.png)
 
 **7+3+3 = 13;**  
 
-So we have perfect 13 bytes no need to nop bytes to prevent spillover
+So we have 12 bytes so we need to nop 1 byte to prevent spillover.
 
 ### Writing the Trampoline
 
@@ -154,8 +154,7 @@ The trampoline has two jobs:
 When we inject a jump at the target instruction, we overwrite some of the game’s original instructions. If we don’t restore them later inside
 our trampoline, the game will break because those instructions were never executed.
 
-So, first we read and store those original bytes. In this case, we need 13 bytes (the exact size we counted for the jump without spilling into 
-the next instruction).
+So, first we read and store those original bytes. In this case, we need to restore 13 bytes.
 
 <div class="cpp-code"><span class="type">BYTE</span> <span class="var">stolenBytes</span>[<span class="num">13</span>];
 <span class="fn">ReadProcessMemory</span>(
@@ -180,32 +179,43 @@ it in two steps:
 Here’s the code that builds and writes that jump:
 
 <div class="cpp-code"><span class="comment">// Build "mov rax, &lt;address&gt;"</span>
-<span class="type">BYTE</span> <span class="var">jmpArray</span>[<span class="num">10</span>];
+<span class="type">BYTE</span> <span class="var">movArray</span>[<span class="num">10</span>];
 <span class="var">jmpArray</span>[<span class="num">0</span>] = <span class="num">0x48</span>; <span class="comment">// REX prefix for 64-bit</span>
 <span class="var">jmpArray</span>[<span class="num">1</span>] = <span class="num">0xB8</span>; <span class="comment">// Opcode for "mov rax, imm64"</span>
 <span class="fn">memcpy</span>(&amp;<span class="var">jmpArray</span>[<span class="num">2</span>], &amp;<span class="var">reserve</span>, <span class="fn">sizeof</span>(<span class="type">uintptr_t</span>)); <span class="comment">// Insert trampoline address</span>
 
 <span class="comment">// Build "jmp rax"</span>
-<span class="type">BYTE</span> <span class="var">movArray</span>[<span class="num">2</span>];
+<span class="type">BYTE</span> <span class="var">jmpArray</span>[<span class="num">2</span>];
 <span class="var">movArray</span>[<span class="num">0</span>] = <span class="num">0xFF</span>; <span class="comment">// Opcode group for near/indirect jumps</span>
 <span class="var">movArray</span>[<span class="num">1</span>] = <span class="num">0xE0</span>; <span class="comment">// ModRM for "jmp rax"</span>
+
+<span class="type">BYTE</span> <span class="var">nopArray</span> = { <span class="num">0x90</span> };
 
 <span class="comment">// Write both parts into the target function</span>
 <span class="fn">WriteProcessMemory</span>(
     <span class="var">hProcess</span>,
     (<span class="type">BYTE</span>* )<span class="var">baseAddr</span> + <span class="num">0x8743F5</span>, <span class="comment">// target instruction</span>
-    <span class="var">jmpArray</span>,
-    <span class="fn">sizeof</span>(<span class="var">jmpArray</span>),
+    <span class="var">movArray</span>,
+    <span class="fn">sizeof</span>(<span class="var">movArray</span>),
     <span class="kw">nullptr</span>
 );
 
 <span class="fn">WriteProcessMemory</span>(
     <span class="var">hProcess</span>,
-    (<span class="type">BYTE</span>* )<span class="var">baseAddr</span> + <span class="num">0x8743F5</span> + <span class="fn">sizeof</span>(<span class="var">jmpArray</span>), <span class="comment">// directly after mov rax</span>
-    <span class="var">movArray</span>,
-    <span class="fn">sizeof</span>(<span class="var">movArray</span>),
+    (<span class="type">BYTE</span>* )<span class="var">baseAddr</span> + <span class="num">0x8743F5</span> + <span class="fn">sizeof</span>(<span class="var">movArray</span>), <span class="comment">// directly after mov rax</span>
+    <span class="var">jmpArray</span>,
+    <span class="fn">sizeof</span>(<span class="var">jmpArray</span>),
     <span class="kw">nullptr</span>
 );
+
+<span class="comment">// NOP the one spillover byte</span>
+<span class="fn">WriteProcessMemory</span>(
+    <span class="var">hProcess</span>,
+    (<span class="type">BYTE</span>* )<span class="var">baseAddr</span> + <span class="num">0x8743F5</span> + <span class="fn">sizeof</span>(<span class="var">movArray</span>) + <span class="fn">sizeof</span>(<span class="var">jmpArray</span>), <span class="comment">// directly after jmp rax</span>
+    <span class="var">nopArray</span>,
+    <span class="fn">sizeof</span>(<span class="var">nopArray</span>),
+    <span class="kw">nullptr</span>
+); 
 </div>
 
 At this point, the original instruction at GhostOfTsushima.exe + 0x8743F5 no longer executes. Instead, execution now flows into our trampoline 
@@ -244,21 +254,52 @@ mov [r10], rcx         ; store rcx (entity pointer) into [entityAddr]
 Because x64 instructions can’t encode a full 64-bit absolute address directly. The only way is to load the address into a register 
 (r10 here) and then store through that register.
 
-**Shellcode**
+**Shellcode & Stolen Bytes**
 
-We build that logic into a small shellcode snippet and write it into our allocated trampoline memory:
+We build our shellcode then write our shellcode and the stolen bytes to our allocated memory:
 
-<div class="cpp-code"><span class="type">BYTE</span> <span class="var">shellcode</span>[] = {
+<div class="cpp-code"><span class="comment">// build our payload</span>
+<span class="type">BYTE</span> <span class="var">shellcode</span>[] = {
     <span class="num">0x49</span>, <span class="num">0xBA</span>,              <span class="comment">// mov r10, imm64</span>
     <span class="num">0</span>, <span class="num">0</span>, <span class="num">0</span>, <span class="num">0</span>, <span class="num">0</span>, <span class="num">0</span>, <span class="num">0</span>, <span class="num">0</span>,  <span class="comment">// placeholder for entityAddr</span>
     <span class="num">0x49</span>, <span class="num">0x89</span>, <span class="num">0x0A</span>         <span class="comment">// mov [r10], rcx</span>
 };
+
+<span class="comment">// add the allocated stash address to our payload</span>
 <span class="fn">memcpy</span>(&amp;<span class="var">shellcode</span>[<span class="num">2</span>], &amp;<span class="var">entityAddr</span>, <span class="fn">sizeof</span>(<span class="type">uintptr_t</span>));
 
+<span class="comment">// write our payload</span>
 <span class="fn">WriteProcessMemory</span>(<span class="var">hProcess</span>, (<span class="type">BYTE</span>*)<span class="var">reserve</span>, <span class="var">shellcode</span>, <span class="fn">sizeof</span>(<span class="var">shellcode</span>), <span class="kw">nullptr</span>);
+
+<span class="comment">// write the stolen bytes</span>
+<span class="fn">WriteProcessMemory</span>(<span class="var">hProcess</span>, (<span class="type">BYTE</span>*)<span class="var">reserve</span> + <span class="fn">sizeof</span>(<span class="var">shellcode</span>), <span class="var">stolenBytes</span>, <span class="fn">sizeof</span>(<span class="var">stolenBytes</span>), <span class="kw">nullptr</span>);
 </div>
 
 At runtime, every time our hooked instruction is hit, the entity pointer in rcx gets stored at entityAddr.
+
+**Jump Back**
+
+We jump back to original instruction:
+
+<div class="cpp-code"><span class="comment">// build our jmpBack</span>
+<span class="type">BYTE</span> <span class="var">jmpBack</span>[] = {
+    <span class="num">0x48</span>, <span class="num">0xB8</span>,              <span class="comment">// mov rax, imm64</span>
+    <span class="num">0</span>, <span class="num">0</span>, <span class="num">0</span>, <span class="num">0</span>, <span class="num">0</span>, <span class="num">0</span>, <span class="num">0</span>, <span class="num">0</span>,  <span class="comment">// placeholder address</span>
+    <span class="num">0xFF</span>, <span class="num">0xE0</span> <span class="comment">// jmp rax</span>
+};
+
+<span class="comment">// calculate our return address (Our return address will be the original instruction address plus the 13 bytes we overwritten)</span>
+<span class="var">jmpBackAddy</span> = <span class="var">baseAddress</span> + <span class="num">0x8743F5</span> + <span class="num">13</span>;
+
+<span class="comment">// add our return address to our jmpBack</span>
+<span class="fn">memcpy</span>(&amp;<span class="var">jmpBack</span>[<span class="num">2</span>], &amp;<span class="var">reserve</span>, <span class="fn">sizeof</span>(<span class="type">uintptr_t</span>));
+
+<span class="comment">// write the jmpBack</span>
+<span class="fn">WriteProcessMemory</span>(<span class="var">hProcess</span>, (<span class="type">BYTE</span>*)<span class="var">reserve</span> + <span class="fn">sizeof</span>(<span class="var">shellcode</span>) + <span class="fn">sizeof</span>(<span class="var">stolenBytes</span>), <span class="var">jmpBack</span>, <span class="fn">sizeof</span>(<span class="var">jmpBack</span>), <span class="kw">nullptr</span>);
+
+</div>
+
+Now after execution of our payload and stolen in our allocated memory it jumps back to our original instruction as to not break flow of execution.
 
 **Reading entities back in C++**
 
@@ -280,6 +321,8 @@ Now we just poll that slot from our tool and log new entities as they appear:
 
 *uniqueEntities.find(curEntity)* will return *uniqueEntities.end()* if no such data exits inside the unorderd map, then we simply insert it using 
 *uniqueEntities.insert(curEntity)*
+
+> You could also check if curEntity has valid health, position or some specific flag to ensure only valid entities are passed into our unordered_set.
 
 This way, every time the Z-axis instruction fires for some entity, we capture it once and stash it in uniqueEntities. Later, we can loop 
 through this set and use their positions for ESP drawing.

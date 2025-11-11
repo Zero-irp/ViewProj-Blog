@@ -8,8 +8,8 @@
 <meta property="og:title" content="Part 4.5: Detour Hooking to Optimize SIMD Operations" />
 <meta name="author" content="z1rp" />
 <meta property="og:locale" content="en_US" />
-<meta name="description" content="Reverse Engineering the ViewProjection Pipeline in Ghost of Tsushima" />
-<meta property="og:description" content="Reverse Engineering the ViewProjection Pipeline in Ghost of Tsushima" />
+<meta name="description" content="Reversing The Construction Of The View-Projection Matrix" />
+<meta property="og:description" content="Reversing The Construction Of The View-Projection Matrix" />
 <link rel="canonical" href="http://localhost:4000/ViewProj-Blog/part-4.5-detour-hooking-simd-operations/" />
 <meta property="og:url" content="http://localhost:4000/ViewProj-Blog/part-4.5-detour-hooking-simd-operations/" />
 <meta property="og:site_name" content="Reversing The ViewProjection Matrix" />
@@ -18,7 +18,7 @@
 <meta name="twitter:card" content="summary" />
 <meta property="twitter:title" content="Part 4.5: Detour Hooking to Optimize SIMD Operations" />
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"z1rp"},"dateModified":"2025-07-17T00:00:00+05:30","datePublished":"2025-07-17T00:00:00+05:30","description":"Reverse Engineering the ViewProjection Pipeline in Ghost of Tsushima","headline":"Part 4.5: Detour Hooking to Optimize SIMD Operations","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/ViewProj-Blog/part-4.5-detour-hooking-simd-operations/"},"url":"http://localhost:4000/ViewProj-Blog/part-4.5-detour-hooking-simd-operations/"}</script>
+{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"z1rp"},"dateModified":"2025-07-17T00:00:00+05:30","datePublished":"2025-07-17T00:00:00+05:30","description":"Reversing The Construction Of The View-Projection Matrix","headline":"Part 4.5: Detour Hooking to Optimize SIMD Operations","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/ViewProj-Blog/part-4.5-detour-hooking-simd-operations/"},"url":"http://localhost:4000/ViewProj-Blog/part-4.5-detour-hooking-simd-operations/"}</script>
 <!-- End Jekyll SEO tag -->
 <link rel="stylesheet" href="/ViewProj-Blog/assets/css/style.css">
   <link rel="stylesheet" href="/ViewProj-Blog/assets/css/syntax.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/ViewProj-Blog/feed.xml" title="Reversing The ViewProjection Matrix" /></head>
@@ -283,7 +283,7 @@ skipping all redundant operations.</p>
 <p>I won’t be showing how to find code caves here, that is out of scope for this blog. Just know that in this case, I’ll be using a code cave that’s 
 conveniently located close enough to our target function.</p>
 
-<h3 id="5-byte-jmp-hook-vs-13-byte-jmp-hook"><strong>5 Byte Jmp hook vs 13 Byte Jmp hook</strong></h3>
+<h3 id="5-byte-jmp-hook-vs-12-byte-jmp-hook"><strong>5 Byte Jmp hook vs 12 Byte Jmp hook</strong></h3>
 
 <p>For the actual detour, I’ll be using the classic 5-byte jmp instruction.</p>
 <ul>
@@ -303,7 +303,7 @@ VirtualAllocEx. But in that case, the E9 relative jump won’t cut it anymore un
   <p>Keep in mind this takes an absolute address where as the 5 byte jmp takes the offset from the instruction address to the location we need to go</p>
 </blockquote>
 
-<p>It takes more bytes (usually 12+ depending on the register used), but it can jump anywhere in 64-bit address space. So:</p>
+<p>It takes more bytes (usually 12 but depends on the register used), but it can jump anywhere in 64-bit address space. So:</p>
 
 <ul>
   <li>If you’ve got a cave nearby → use the 5-byte jmp.</li>
@@ -530,7 +530,7 @@ bigger lesson: systems don’t always do things the cleanest way, and compilers 
 </div>
 
       <div class="footer-col footer-col-3">
-        <p>Reverse Engineering the ViewProjection Pipeline in Ghost of Tsushima</p>
+        <p>Reversing The Construction Of The View-Projection Matrix</p>
       </div>
     </div>
 

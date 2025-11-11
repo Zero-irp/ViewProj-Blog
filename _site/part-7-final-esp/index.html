@@ -8,8 +8,8 @@
 <meta property="og:title" content="Part 7: Final ESP with Imgui" />
 <meta name="author" content="z1rp" />
 <meta property="og:locale" content="en_US" />
-<meta name="description" content="Reverse Engineering the ViewProjection Pipeline in Ghost of Tsushima" />
-<meta property="og:description" content="Reverse Engineering the ViewProjection Pipeline in Ghost of Tsushima" />
+<meta name="description" content="Reversing The Construction Of The View-Projection Matrix" />
+<meta property="og:description" content="Reversing The Construction Of The View-Projection Matrix" />
 <link rel="canonical" href="http://localhost:4000/ViewProj-Blog/part-7-final-esp/" />
 <meta property="og:url" content="http://localhost:4000/ViewProj-Blog/part-7-final-esp/" />
 <meta property="og:site_name" content="Reversing The ViewProjection Matrix" />
@@ -18,7 +18,7 @@
 <meta name="twitter:card" content="summary" />
 <meta property="twitter:title" content="Part 7: Final ESP with Imgui" />
 <script type="application/ld+json">
-{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"z1rp"},"dateModified":"2025-07-17T00:00:00+05:30","datePublished":"2025-07-17T00:00:00+05:30","description":"Reverse Engineering the ViewProjection Pipeline in Ghost of Tsushima","headline":"Part 7: Final ESP with Imgui","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/ViewProj-Blog/part-7-final-esp/"},"url":"http://localhost:4000/ViewProj-Blog/part-7-final-esp/"}</script>
+{"@context":"https://schema.org","@type":"BlogPosting","author":{"@type":"Person","name":"z1rp"},"dateModified":"2025-07-17T00:00:00+05:30","datePublished":"2025-07-17T00:00:00+05:30","description":"Reversing The Construction Of The View-Projection Matrix","headline":"Part 7: Final ESP with Imgui","mainEntityOfPage":{"@type":"WebPage","@id":"http://localhost:4000/ViewProj-Blog/part-7-final-esp/"},"url":"http://localhost:4000/ViewProj-Blog/part-7-final-esp/"}</script>
 <!-- End Jekyll SEO tag -->
 <link rel="stylesheet" href="/ViewProj-Blog/assets/css/style.css">
   <link rel="stylesheet" href="/ViewProj-Blog/assets/css/syntax.css"><link type="application/atom+xml" rel="alternate" href="http://localhost:4000/ViewProj-Blog/feed.xml" title="Reversing The ViewProjection Matrix" /></head>
@@ -122,7 +122,8 @@ using ImGui.</p>
 
 <blockquote>
   <p>entityAddr is the stash address of our trampoline hook where it stashs addresses which have accessed the z 
-axis.</p>
+axis.<br />
+This is inside a while loop btw.</p>
 </blockquote>
 
 <p><strong>Step 2: Filtering Unique and Relevant Entities</strong></p>
@@ -172,16 +173,6 @@ axis.</p>
 </ul>
 
 <p><strong>Step 5: Drawing Snaplines Using ImGui</strong></p>
-<div class="cpp-code"><span class="type">ImVec2</span> <span class="var">screenSize</span> = <span class="function">ImGui</span>::<span class="function">GetIO</span>().DisplaySize;
-<span class="type">ImVec2</span> <span class="var">from</span> = <span class="function">ImVec2</span>(<span class="var">screenSize</span>.x / <span class="number">2.0f</span>, <span class="var">screenSize</span>.y); <span class="comment">// bottom center</span>
-<span class="type">ImVec2</span> <span class="var">to</span> = <span class="function">ImVec2</span>(<span class="var">screenPos</span>.x, <span class="var">screenPos</span>.y);
-
-<span class="type">ImU32</span> <span class="var">color</span> = <span class="function">IM_COL32</span>(<span class="number">255</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">255</span>); <span class="comment">// red</span>
-<span class="keyword">if</span> (<span class="var">screenPos</span>.x &lt; <span class="number">1920</span> &amp;&amp; <span class="var">screenPos</span>.y &lt; <span class="number">1080</span> &amp;&amp; <span class="var">screenPos</span>.x &gt; <span class="number">0</span> &amp;&amp; <span class="var">screenPos</span>.y &gt; <span class="number">0</span>)
-{
-    <span class="function">ImGui</span>::<span class="function">GetBackgroundDrawList</span>()-&gt;<span class="function">AddLine</span>(<span class="var">from</span>, <span class="var">to</span>, <span class="var">color</span>, <span class="number">1.5f</span>);
-}
-</div>
 
 <div class="cpp-code"><span class="comment">// Height of the box</span>
 <span class="keyword">float</span> <span class="var">h</span> = <span class="var">screenFeet</span>.y - <span class="var">screenHead</span>.y;
@@ -251,7 +242,7 @@ just going to end it here, I’m sick of writing all this.</p>
 </div>
 
       <div class="footer-col footer-col-3">
-        <p>Reverse Engineering the ViewProjection Pipeline in Ghost of Tsushima</p>
+        <p>Reversing The Construction Of The View-Projection Matrix</p>
       </div>
     </div>
 

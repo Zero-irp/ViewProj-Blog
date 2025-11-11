@@ -65,7 +65,8 @@ Let's begin:
 - curEntPos: World position at offset 0x120
 
 > entityAddr is the stash address of our trampoline hook where it stashs addresses which have accessed the z 
-axis.
+axis.  
+This is inside a while loop btw.
 
 **Step 2: Filtering Unique and Relevant Entities**
 <div class="cpp-code"><span class="keyword">if</span> (<span class="var">curEntity</span> != <span class="number">0</span> && <span class="var">curHealth</span> != <span class="number">0</span> && <span class="var">LocalPlayerAddr</span> != <span class="var">curEntity</span> && <span class="var">uniqueEntities</span>.<span class="function">find</span>(<span class="var">curEntity</span>) == <span class="var">uniqueEntities</span>.<span class="function">end</span>())
@@ -108,16 +109,6 @@ axis.
 - WorldToScreen: Converts (x, y, z) → (screenX, screenY) for rendering.
 
 **Step 5: Drawing Snaplines Using ImGui**
-<div class="cpp-code"><span class="type">ImVec2</span> <span class="var">screenSize</span> = <span class="function">ImGui</span>::<span class="function">GetIO</span>().DisplaySize;
-<span class="type">ImVec2</span> <span class="var">from</span> = <span class="function">ImVec2</span>(<span class="var">screenSize</span>.x / <span class="number">2.0f</span>, <span class="var">screenSize</span>.y); <span class="comment">// bottom center</span>
-<span class="type">ImVec2</span> <span class="var">to</span> = <span class="function">ImVec2</span>(<span class="var">screenPos</span>.x, <span class="var">screenPos</span>.y);
-
-<span class="type">ImU32</span> <span class="var">color</span> = <span class="function">IM_COL32</span>(<span class="number">255</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">255</span>); <span class="comment">// red</span>
-<span class="keyword">if</span> (<span class="var">screenPos</span>.x &lt; <span class="number">1920</span> &amp;&amp; <span class="var">screenPos</span>.y &lt; <span class="number">1080</span> &amp;&amp; <span class="var">screenPos</span>.x &gt; <span class="number">0</span> &amp;&amp; <span class="var">screenPos</span>.y &gt; <span class="number">0</span>)
-{
-    <span class="function">ImGui</span>::<span class="function">GetBackgroundDrawList</span>()-><span class="function">AddLine</span>(<span class="var">from</span>, <span class="var">to</span>, <span class="var">color</span>, <span class="number">1.5f</span>);
-}
-</div>
 
 <div class="cpp-code"><span class="comment">// Height of the box</span>
 <span class="keyword">float</span> <span class="var">h</span> = <span class="var">screenFeet</span>.y - <span class="var">screenHead</span>.y;

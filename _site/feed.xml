@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.4.1">Jekyll</generator><link href="http://localhost:4000/ViewProj-Blog/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/ViewProj-Blog/" rel="alternate" type="text/html" /><updated>2025-11-07T18:35:45+05:30</updated><id>http://localhost:4000/ViewProj-Blog/feed.xml</id><title type="html">Reversing The ViewProjection Matrix</title><subtitle>Reverse Engineering the ViewProjection Pipeline in Ghost of Tsushima</subtitle><author><name>z1rp</name></author><entry><title type="html">Part 1: Introduction</title><link href="http://localhost:4000/ViewProj-Blog/part-1-intro/" rel="alternate" type="text/html" title="Part 1: Introduction" /><published>2025-07-17T00:00:00+05:30</published><updated>2025-07-17T00:00:00+05:30</updated><id>http://localhost:4000/ViewProj-Blog/part-1-intro</id><content type="html" xml:base="http://localhost:4000/ViewProj-Blog/part-1-intro/"><![CDATA[<h3 id="️-disclaimer">⚠️ Disclaimer:</h3>
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.4.1">Jekyll</generator><link href="http://localhost:4000/ViewProj-Blog/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/ViewProj-Blog/" rel="alternate" type="text/html" /><updated>2025-11-11T23:50:47+05:30</updated><id>http://localhost:4000/ViewProj-Blog/feed.xml</id><title type="html">Reversing The ViewProjection Matrix</title><subtitle>Reversing The Construction Of The View-Projection Matrix</subtitle><author><name>z1rp</name></author><entry><title type="html">Part 1: Introduction</title><link href="http://localhost:4000/ViewProj-Blog/part-1-intro/" rel="alternate" type="text/html" title="Part 1: Introduction" /><published>2025-07-17T00:00:00+05:30</published><updated>2025-07-17T00:00:00+05:30</updated><id>http://localhost:4000/ViewProj-Blog/part-1-intro</id><content type="html" xml:base="http://localhost:4000/ViewProj-Blog/part-1-intro/"><![CDATA[<h3 id="️-disclaimer">⚠️ Disclaimer:</h3>
 <p>The content on this blog is provided for educational and informational purposes only. I do not encourage, endorse, or support any illegal activity. 
 Any techniques, tools, or concepts discussed are intended solely for learning, research, defensive security, or experimentation in safe, legal 
 environments. Use this information responsibly and at your own risk. The author is not responsible for any misuse or legal consequences that may 
@@ -6,10 +6,10 @@ result from applying what’s written here.</p>
 
 <h3 id="how-this-rabbit-hole-started"><strong>How This Rabbit Hole Started:</strong></h3>
 
-<p>It all began when I was messing around with Ghost of Tsushima, trying to locate the View-Projection matrix to build a working world-to-screen (W2S) function. I eventually found it 
+<p>It all began when I was messing around with Ghost of Tsushima, trying to locate the View-Projection matrix to build a working world-to-screen (w2s) function. I eventually found it 
 and it worked as intended. But while digging through memory, I came across several other interesting matrices. Two of them stood out: the Camera World Matrix and the Perspective 
-Projection Matrix. I figured I could reconstruct the View-Projection matrix myself by multiplying the projection matrix with the inverse of the camera world matrix as most graphics 
-pipelines do. But the result didn’t match the actual View-Projection matrix.
+Projection Matrix. I figured i could reconstruct the View-Projection matrix myself by multiplying the inverse of the camera world matrix with projection matrix the as most Direct-X games 
+do. But the result didn’t match the actual View-Projection matrix.
 Curious, I started tracing the functions that write to the View-Projection matrix using IDA Pro, ReClass, and Cheat Engine. That’s when I discovered the engine was building 
 the matrix in a non-standard way, or at least, a way that was unfamiliar to me and different from the basic graphics pipeline I was expecting.</p>
 
@@ -74,7 +74,9 @@ For example, an ESP might let you:</p>
       <li><a href="../part-2.2-projection-matrix/#what-is-the-projection-matrix">What is the Projection Matrix?</a></li>
       <li><a href="../part-2.2-projection-matrix/#what-the-projection-matrix-does">What the Projection Matrix Does</a></li>
       <li><a href="../part-2.2-projection-matrix/#layout-of-the-perspective-projection-matrix">Layout of the Perspective Projection Matrix</a></li>
+      <li><a href="../part-2.2-projection-matrix/#relationship-between-horizontal-and-vertical-fov">Relationship Between Horizontal and Vertical FOV</a></li>
       <li><a href="../part-2.2-projection-matrix/#what-is-reverse-z">What is Reverse Z?</a></li>
+      <li><a href="../part-2.2-projection-matrix/#layout-of-reverse-z-projection-matrix">Layout of Reverse Z Projection Matrix</a></li>
     </ul>
   </li>
   <li><strong><a href="../part-2.3-View-Projection-matrix/">Part 2.3: View Projection Matrix</a></strong>
@@ -107,7 +109,7 @@ For example, an ESP might let you:</p>
       <li><a href="../part-4.2-reversing-simd-instrustions/#masking-out-w-with-simd-theory">Masking Out w with SIMD (Theory)</a></li>
       <li><a href="../part-4.2-reversing-simd-instrustions/#_mm_shuffle_ps-theory">_mm_shuffle_ps (Theory)</a></li>
       <li><a href="../part-4.2-reversing-simd-instrustions/#negating-a-vector-with-simd-theory">Negating a Vector with SIMD (Theory)</a></li>
-      <li><a href="../part-4.2-reversing-simd-instrustions/#mm_unpack-theory">_mm_unpack (Theory)</a></li>
+      <li><a href="../part-4.2-reversing-simd-instrustions/#_mm_unpack-theory">_mm_unpack (Theory)</a></li>
       <li><a href="../part-4.2-reversing-simd-instrustions/#transposing-and-shuffling-intermediate-vectors-theory">Transposing and Shuffling Intermediate Vectors (Theory)</a></li>
       <li><a href="../part-4.2-reversing-simd-instrustions/#manual-matrix-reconstruction-from-simd-operations-example">Manual Matrix Reconstruction from SIMD Operations (Example)</a></li>
       <li><a href="../part-4.2-reversing-simd-instrustions/#simd-based-vec4--4x4-matrix-multiplication-theory">SIMD-Based Vec4 × 4x4 Matrix Multiplication (Theory)</a></li>
@@ -143,7 +145,7 @@ For example, an ESP might let you:</p>
     <ul>
       <li><a href="../part-4.5-detour-hooking-simd-operations/#what-is-detour-hooking">What is detour Hooking?</a></li>
       <li><a href="../part-4.5-detour-hooking-simd-operations/#heres-the-approach">The approach</a></li>
-      <li><a href="../part-4.5-detour-hooking-simd-operations/#5-byte-jmp-hook-vs-13-byte-jmp-hook">5 Byte jmp hook vs 13 Byte jmp hook</a></li>
+      <li><a href="../part-4.5-detour-hooking-simd-operations/#5-byte-jmp-hook-vs-12-byte-jmp-hook">5 Byte Jmp hook vs 12 Byte Jmp hook</a></li>
       <li><a href="../part-4.5-detour-hooking-simd-operations/#writing-our-hook">Writing our hook</a></li>
       <li><a href="../part-4.5-detour-hooking-simd-operations/#code-explanation">Code Explanation:</a></li>
       <li><a href="../part-4.5-detour-hooking-simd-operations/#executing-our-hook">Executing our hook</a></li>
@@ -378,7 +380,7 @@ It defines the camera’s local Z-axis</p>
 view space where Z goes into the screen), the view matrix uses the negative Z-axis, which would be (CameraPosition - LookAtTarget).normalized().</p>
 </blockquote>
 
-<p>These variables (eg: Right.x or forward.y etc) can map from <em>-1</em> to <em>1</em> or <em>0</em> to <em>1</em> depending on the graphics Api used (eg: directx/OpenGL).</p>
+<p>The components of orientation vectors (Right, Up, Forward) will always be in the range of -1.0 to 1.0.</p>
 
 <p><strong>Translation Vector:</strong><br />
 This translation vector basically tells the view matrix how to undo the camera’s position and orientation so that the world moves around the camera and not the other way around.
@@ -434,8 +436,10 @@ While a model matrix typically includes rotation, translation, and scale, the ca
 Structurally, they share the same layout, the camera world matrix is essentially a model matrix for the camera itself.</p>
 </blockquote>
 
-<p><strong>If you want to learn more about model, view and projection matrices you can check this OpenGL tutorial out:</strong><br />
-<a href="https://www.opengl-tutorial.org/beginners-tutorials/tutorial-3-matrices/#the-model-view-and-projection-matrices">OpenGL tutorial</a></p>
+<p><strong>If you want to learn more about model, view and projection matrices you can check out this OpenGL tutorial and this video which i found informative 
+explaining the math behind matrices and 3d graphics theory:</strong><br />
+<a href="https://www.opengl-tutorial.org/beginners-tutorials/tutorial-3-matrices">OpenGL tutorial</a><br />
+<a href="https://www.youtube.com/watch?v=wiYTxjJjfxs">In Video Games, The Player Never Moves</a></p>
 
 <p><em>All of these mathematical relationships, spatial orientations, and foundational concepts might seem unnecessary but they are crucial. We’ll
 rely on this knowledge to accurately identify the different matrices in memory, decode how the game constructs them, and understand exactly
@@ -468,9 +472,9 @@ It Determines:</p>
 
 <p>The projection matrix transforms view space into clip space. The graphics pipeline then performs the perspective divide (dividing by w) to convert clip space into Normalized 
 Device Coordinates (NDC).<br />
-In NDC:</p>
+In NDC (for DirectX):</p>
 <ul>
-  <li>The x, y, and z coordinates are squeezed into a cube from -1 to 1.</li>
+  <li>The x and y coordinates are squeezed into the range −1 to +1, and the z coordinate is squeezed into the range 0 to +1.</li>
   <li>Everything inside this cube is visible.</li>
   <li>Everything outside is clipped (not rendered).</li>
 </ul>
@@ -478,9 +482,9 @@ In NDC:</p>
 <p>The <em>Projection Matrix</em> represents how the camera sees. It gives the world its sense of depth and perspective, and its parameters:
 FOV, aspect ratio, near and far planes define the visible 3D frustum.</p>
 
-<h3 id="layout-of-the-perspective-projection-matrix">Layout of the Perspective Projection Matrix</h3>
+<h3 id="layout-of-the-perspective-projection-matrix"><strong>Layout of the Perspective Projection Matrix</strong></h3>
 
-<p>Here is the standard layout of a row-major perspective projection matrix (DirectX):</p>
+<p>Here is the standard layout of a perspective projection matrix (DirectX):</p>
 
 \[P =
 \begin{bmatrix}
@@ -505,11 +509,31 @@ x_{scale} &amp; 0 &amp; 0 &amp; 0 \\
 
     <p>or equivalently,<br />
 \(y_{scale} = \frac{1}{AspectRatio \cdot \tan{\left(\frac{Fov_X}{2}\right)}}\)</p>
-
-    <p>where<br />
-\(Fov_Y = AspectRatio \cdot Fov_X\)</p>
   </li>
 </ul>
+
+<p><em>For a deep dive and visual derivation of how these parameters (FOV, Aspect Ratio, Near/Far planes) determine each element of the Perspective Projection Matrix check out this video by 
+by pikuma.</em><br />
+<a href="https://www.youtube.com/watch?v=EqNcqBdrNyI">Perspective Projection Matrix (Math for Game Developers)</a></p>
+
+<h3 id="relationship-between-horizontal-and-vertical-fov"><strong>Relationship Between Horizontal and Vertical FOV</strong></h3>
+
+<p>Let A denote the Aspect Ratio, defined as</p>
+
+\[A = \text{AspectRatio} = \frac{\text{Width}}{\text{Height}}\]
+
+<p>The relationship between \(FOV_x\) and \(FOV_y\) is:</p>
+
+\[\tan\left(\frac{FOV_X}{2}\right) = A \cdot \tan\left(\frac{FOV_Y}{2}\right)\]
+
+<p>From this, we can express each one in terms of the other:</p>
+
+\[FOV_X = 2 \cdot \tan^{-1}\!\left(A \cdot \tan\!\left(\frac{FOV_Y}{2}\right)\right)\]
+
+\[FOV_Y = 2 \cdot \tan^{-1}\!\left(\frac{\tan\!\left(\frac{FOV_X}{2}\right)}{A}\right)\]
+
+<p><em>If you want to learn how these formulas are derived i recommand this write-up by Wojtek Sterna:</em><br />
+<a href="https://wojtsterna.com/2024/01/09/field-of-view-horizontal-and-vertical-conversion/">Field of View – Horizontal and Vertical Conversion</a></p>
 
 <h3 id="what-is-reverse-z"><strong>What is Reverse Z?</strong></h3>
 
@@ -531,14 +555,25 @@ in front of the camera.</p>
 \begin{bmatrix}
 x_{scale} &amp; 0 &amp; 0 &amp; 0 \\
 0 &amp; y_{scale} &amp; 0 &amp; 0 \\
-0 &amp; 0 &amp; \dfrac{z_{near}}{z_{near} - z_{far}} &amp; 1 \\
-0 &amp; 0 &amp; \dfrac{z_{far} \cdot z_{near}}{z_{near} - z_{far}} &amp; 0
+0 &amp; 0 &amp; -\dfrac{z_{near}}{z_{far} - z_{near}} &amp; 1 \\
+0 &amp; 0 &amp; \dfrac{z_{far} \cdot z_{near}}{z_{far} - z_{near}} &amp; 0
 \end{bmatrix}\]
 
 <ul>
-  <li>Swapped near/far for m22</li>
-  <li>Swapped near/far and signs for m32</li>
+  <li>Swapped far to negative near for numerator at m22</li>
+  <li>Fliped signs for numerator at m32</li>
 </ul>
+
+<blockquote>
+  <p>This is the specific layout of the projection matrix used in Ghost of Tsushima, this is not an absolute layout for reverse-Z.<br />
+What defines a Reverse-Z projection is simply the depth mapping after the perspective divide:</p>
+  <ul>
+    <li>near → 1</li>
+    <li>far → 0</li>
+  </ul>
+
+  <p>As long as this mapping holds true, it qualifies as Reverse-Z.</p>
+</blockquote>
 
 <p><em>We’ll later see how this matrix fits into the full pipeline and how the 3D position finally lands on your screen.</em></p>]]></content><author><name>z1rp</name></author><summary type="html"><![CDATA[What is the Projection Matrix?]]></summary></entry><entry><title type="html">Part 2.3: View Projection Matrix</title><link href="http://localhost:4000/ViewProj-Blog/part-2.3-View-Projection-matrix/" rel="alternate" type="text/html" title="Part 2.3: View Projection Matrix" /><published>2025-07-17T00:00:00+05:30</published><updated>2025-07-17T00:00:00+05:30</updated><id>http://localhost:4000/ViewProj-Blog/part-2.3-View-Projection-matrix</id><content type="html" xml:base="http://localhost:4000/ViewProj-Blog/part-2.3-View-Projection-matrix/"><![CDATA[<h3 id="what-is-the-view-projection-matrix"><strong>What is the View-Projection Matrix?</strong></h3>
 
@@ -561,6 +596,9 @@ most engines just precompute it once per frame and cache it in memory.</p>
 
 <p>Even though it’s “just” the product of two matrices, the VP Matrix is the one that usually gets used the most, it represents the 
 full world-to-clip transformation and decides what actually shows up on screen.</p>
+
+<p><em>For a comprehensive, detailed breakdown of the entire transformation chain (Model, World, View, and Projection),  i  highly recommended this article by Marco Alamia:</em><br />
+<a href="http://www.codinglabs.net/article_world_view_projection_matrix.aspx">World, View and Projection Transformation Matrices</a></p>
 
 <p><em>This is all we’ll cover about the View-Projection matrix for now. The goal isn’t to dive deep into 3D rendering, but to build a clear, 
 working understanding of how it functions at a basic level.</em></p>]]></content><author><name>z1rp</name></author><summary type="html"><![CDATA[What is the View-Projection Matrix?]]></summary></entry><entry><title type="html">Part 3: Finding &amp;amp; Reversing Matrices</title><link href="http://localhost:4000/ViewProj-Blog/part-3-finding-and-reversing-matrices/" rel="alternate" type="text/html" title="Part 3: Finding &amp;amp; Reversing Matrices" /><published>2025-07-17T00:00:00+05:30</published><updated>2025-07-17T00:00:00+05:30</updated><id>http://localhost:4000/ViewProj-Blog/part-3-finding-and-reversing-matrices</id><content type="html" xml:base="http://localhost:4000/ViewProj-Blog/part-3-finding-and-reversing-matrices/"><![CDATA[<h3 id="how-we-search-for-matrices-in-memory"><strong>How We Search for Matrices in Memory</strong></h3>
@@ -1141,7 +1179,7 @@ is to acknowledge what we don’t know and document it and move forward.</p>
 <p>This SIMD instruction is simply a way to negate a 3D vector while keeping the W component cleared. In the context of a 4x4 camera world matrix 
 this is used to possibly convert <em>handedness</em>.</p>
 
-<h3 id="mm_unpack-theory">mm_unpack (Theory)</h3>
+<h3 id="_mm_unpack-theory">_mm_unpack (Theory)</h3>
 
 <div class="ida-code"><span class="var">mergedHigh</span> = <span class="fn">_mm_unpackhi_ps</span>(<span class="var">CamWorldMat_1_negated</span>, <span class="var">CamWorldMat_2</span>);
 <span class="var">mergedLow</span> = <span class="fn">_mm_unpacklo_ps</span>(<span class="var">CamWorldMat_1_negated</span>, <span class="var">CamWorldMat_2</span>);
@@ -1169,14 +1207,16 @@ Similarly merges the higher 64 bits (the last two floats) of both vectors, so it
 <span class="var">v13</span> = <span class="fn">_mm_and_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">mergedLow</span>, <span class="var">CamWorldMat_0</span>, <span class="num">4</span>), (<span class="type">__m128</span>)<span class="const">NaNNaNNaN0f_Mask</span>);
 </div>
 
-<p>These instructions continue the SIMD-based matrix construction logic.</p>
+<p>These SIMD operations perform a fast inverse (We will learn Fast inverse later down the write up) of the camera world matrix by transposing its rotational part and 
+rearranging coordinate components.</p>
 
 <ul>
   <li>Shuffles components from mergedLow, mergedHigh, and CamWorldMat_0 using _mm_shuffle_ps</li>
   <li>Then masks the result using NaNNaNNaN0f_Mask to zero out the W component (renamed xmmword_1138D50)</li>
 </ul>
 
-<p>Since we’ve already broken down how _mm_shuffle_ps and _mm_and_ps work earlier in this post, we won’t repeat that here.</p>
+<p>Since we’ve already broken down how _mm_shuffle_ps and _mm_and_ps work earlier in this post, we won’t repeat that here.<br />
+We will see how it all comes together later down the write up.</p>
 
 <h3 id="manual-matrix-reconstruction-from-simd-operations-example">Manual Matrix Reconstruction from SIMD Operations (Example)</h3>
 
@@ -1383,6 +1423,10 @@ just selecting the last row of the projection matrix (ProjMat_3).</p>
   <li>SomeRow2 = [-0.906, -0.072, 0.416, 0]</li>
   <li>xmmword_1138D10 = [0.0, 0.0, 0.0, 1.0]</li>
 </ul>
+
+<blockquote>
+  <p>Previously v11, v12 and v13 respectively</p>
+</blockquote>
 
 <p><strong>Let’s recap how it was constructed:</strong><br />
 <img src="/ViewProj-Blog/assets/images/part-4.2/simd-matrix-math.png" alt="ESP-Image1" /></p>
@@ -2589,7 +2633,7 @@ skipping all redundant operations.</p>
 <p>I won’t be showing how to find code caves here, that is out of scope for this blog. Just know that in this case, I’ll be using a code cave that’s 
 conveniently located close enough to our target function.</p>
 
-<h3 id="5-byte-jmp-hook-vs-13-byte-jmp-hook"><strong>5 Byte Jmp hook vs 13 Byte Jmp hook</strong></h3>
+<h3 id="5-byte-jmp-hook-vs-12-byte-jmp-hook"><strong>5 Byte Jmp hook vs 12 Byte Jmp hook</strong></h3>
 
 <p>For the actual detour, I’ll be using the classic 5-byte jmp instruction.</p>
 <ul>
@@ -2609,7 +2653,7 @@ VirtualAllocEx. But in that case, the E9 relative jump won’t cut it anymore un
   <p>Keep in mind this takes an absolute address where as the 5 byte jmp takes the offset from the instruction address to the location we need to go</p>
 </blockquote>
 
-<p>It takes more bytes (usually 12+ depending on the register used), but it can jump anywhere in 64-bit address space. So:</p>
+<p>It takes more bytes (usually 12 but depends on the register used), but it can jump anywhere in 64-bit address space. So:</p>
 
 <ul>
   <li>If you’ve got a cave nearby → use the 5-byte jmp.</li>

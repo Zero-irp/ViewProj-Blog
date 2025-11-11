@@ -67,10 +67,10 @@ result from applying what’s written here.</p>
 
 <h3 id="how-this-rabbit-hole-started"><strong>How This Rabbit Hole Started:</strong></h3>
 
-<p>It all began when I was messing around with Ghost of Tsushima, trying to locate the View-Projection matrix to build a working world-to-screen (W2S) function. I eventually found it 
+<p>It all began when I was messing around with Ghost of Tsushima, trying to locate the View-Projection matrix to build a working world-to-screen (w2s) function. I eventually found it 
 and it worked as intended. But while digging through memory, I came across several other interesting matrices. Two of them stood out: the Camera World Matrix and the Perspective 
-Projection Matrix. I figured I could reconstruct the View-Projection matrix myself by multiplying the projection matrix with the inverse of the camera world matrix as most graphics 
-pipelines do. But the result didn’t match the actual View-Projection matrix.
+Projection Matrix. I figured i could reconstruct the View-Projection matrix myself by multiplying the inverse of the camera world matrix with projection matrix the as most Direct-X games 
+do. But the result didn’t match the actual View-Projection matrix.
 Curious, I started tracing the functions that write to the View-Projection matrix using IDA Pro, ReClass, and Cheat Engine. That’s when I discovered the engine was building 
 the matrix in a non-standard way, or at least, a way that was unfamiliar to me and different from the basic graphics pipeline I was expecting.</p>
 
@@ -135,7 +135,9 @@ For example, an ESP might let you:</p>
       <li><a href="../part-2.2-projection-matrix/#what-is-the-projection-matrix">What is the Projection Matrix?</a></li>
       <li><a href="../part-2.2-projection-matrix/#what-the-projection-matrix-does">What the Projection Matrix Does</a></li>
       <li><a href="../part-2.2-projection-matrix/#layout-of-the-perspective-projection-matrix">Layout of the Perspective Projection Matrix</a></li>
+      <li><a href="../part-2.2-projection-matrix/#relationship-between-horizontal-and-vertical-fov">Relationship Between Horizontal and Vertical FOV</a></li>
       <li><a href="../part-2.2-projection-matrix/#what-is-reverse-z">What is Reverse Z?</a></li>
+      <li><a href="../part-2.2-projection-matrix/#layout-of-reverse-z-projection-matrix">Layout of Reverse Z Projection Matrix</a></li>
     </ul>
   </li>
   <li><strong><a href="../part-2.3-View-Projection-matrix/">Part 2.3: View Projection Matrix</a></strong>
@@ -168,7 +170,7 @@ For example, an ESP might let you:</p>
       <li><a href="../part-4.2-reversing-simd-instrustions/#masking-out-w-with-simd-theory">Masking Out w with SIMD (Theory)</a></li>
       <li><a href="../part-4.2-reversing-simd-instrustions/#_mm_shuffle_ps-theory">_mm_shuffle_ps (Theory)</a></li>
       <li><a href="../part-4.2-reversing-simd-instrustions/#negating-a-vector-with-simd-theory">Negating a Vector with SIMD (Theory)</a></li>
-      <li><a href="../part-4.2-reversing-simd-instrustions/#mm_unpack-theory">_mm_unpack (Theory)</a></li>
+      <li><a href="../part-4.2-reversing-simd-instrustions/#_mm_unpack-theory">_mm_unpack (Theory)</a></li>
       <li><a href="../part-4.2-reversing-simd-instrustions/#transposing-and-shuffling-intermediate-vectors-theory">Transposing and Shuffling Intermediate Vectors (Theory)</a></li>
       <li><a href="../part-4.2-reversing-simd-instrustions/#manual-matrix-reconstruction-from-simd-operations-example">Manual Matrix Reconstruction from SIMD Operations (Example)</a></li>
       <li><a href="../part-4.2-reversing-simd-instrustions/#simd-based-vec4--4x4-matrix-multiplication-theory">SIMD-Based Vec4 × 4x4 Matrix Multiplication (Theory)</a></li>
@@ -204,7 +206,7 @@ For example, an ESP might let you:</p>
     <ul>
       <li><a href="../part-4.5-detour-hooking-simd-operations/#what-is-detour-hooking">What is detour Hooking?</a></li>
       <li><a href="../part-4.5-detour-hooking-simd-operations/#heres-the-approach">The approach</a></li>
-      <li><a href="../part-4.5-detour-hooking-simd-operations/#5-byte-jmp-hook-vs-13-byte-jmp-hook">5 Byte jmp hook vs 13 Byte jmp hook</a></li>
+      <li><a href="../part-4.5-detour-hooking-simd-operations/#5-byte-jmp-hook-vs-12-byte-jmp-hook">5 Byte Jmp hook vs 12 Byte Jmp hook</a></li>
       <li><a href="../part-4.5-detour-hooking-simd-operations/#writing-our-hook">Writing our hook</a></li>
       <li><a href="../part-4.5-detour-hooking-simd-operations/#code-explanation">Code Explanation:</a></li>
       <li><a href="../part-4.5-detour-hooking-simd-operations/#executing-our-hook">Executing our hook</a></li>
@@ -303,7 +305,7 @@ For example, an ESP might let you:</p>
 </div>
 
       <div class="footer-col footer-col-3">
-        <p>Reverse Engineering the ViewProjection Pipeline in Ghost of Tsushima</p>
+        <p>Reversing The Construction Of The View-Projection Matrix</p>
       </div>
     </div>
 

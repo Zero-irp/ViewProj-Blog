@@ -88,9 +88,9 @@ It Determines:</p>
 
 <p>The projection matrix transforms view space into clip space. The graphics pipeline then performs the perspective divide (dividing by w) to convert clip space into Normalized 
 Device Coordinates (NDC).<br />
-In NDC:</p>
+In NDC (for DirectX):</p>
 <ul>
-  <li>The x, y, and z coordinates are squeezed into a cube from -1 to 1.</li>
+  <li>The x and y coordinates are squeezed into the range −1 to +1, and the z coordinate is squeezed into the range 0 to +1.</li>
   <li>Everything inside this cube is visible.</li>
   <li>Everything outside is clipped (not rendered).</li>
 </ul>
@@ -98,9 +98,9 @@ In NDC:</p>
 <p>The <em>Projection Matrix</em> represents how the camera sees. It gives the world its sense of depth and perspective, and its parameters:
 FOV, aspect ratio, near and far planes define the visible 3D frustum.</p>
 
-<h3 id="layout-of-the-perspective-projection-matrix">Layout of the Perspective Projection Matrix</h3>
+<h3 id="layout-of-the-perspective-projection-matrix"><strong>Layout of the Perspective Projection Matrix</strong></h3>
 
-<p>Here is the standard layout of a row-major perspective projection matrix (DirectX):</p>
+<p>Here is the standard layout of a perspective projection matrix (DirectX):</p>
 
 \[P =
 \begin{bmatrix}
@@ -125,11 +125,31 @@ x_{scale} &amp; 0 &amp; 0 &amp; 0 \\
 
     <p>or equivalently,<br />
 \(y_{scale} = \frac{1}{AspectRatio \cdot \tan{\left(\frac{Fov_X}{2}\right)}}\)</p>
-
-    <p>where<br />
-\(Fov_Y = AspectRatio \cdot Fov_X\)</p>
   </li>
 </ul>
+
+<p><em>For a deep dive and visual derivation of how these parameters (FOV, Aspect Ratio, Near/Far planes) determine each element of the Perspective Projection Matrix check out this video by 
+by pikuma.</em><br />
+<a href="https://www.youtube.com/watch?v=EqNcqBdrNyI">Perspective Projection Matrix (Math for Game Developers)</a></p>
+
+<h3 id="relationship-between-horizontal-and-vertical-fov"><strong>Relationship Between Horizontal and Vertical FOV</strong></h3>
+
+<p>Let A denote the Aspect Ratio, defined as</p>
+
+\[A = \text{AspectRatio} = \frac{\text{Width}}{\text{Height}}\]
+
+<p>The relationship between \(FOV_x\) and \(FOV_y\) is:</p>
+
+\[\tan\left(\frac{FOV_X}{2}\right) = A \cdot \tan\left(\frac{FOV_Y}{2}\right)\]
+
+<p>From this, we can express each one in terms of the other:</p>
+
+\[FOV_X = 2 \cdot \tan^{-1}\!\left(A \cdot \tan\!\left(\frac{FOV_Y}{2}\right)\right)\]
+
+\[FOV_Y = 2 \cdot \tan^{-1}\!\left(\frac{\tan\!\left(\frac{FOV_X}{2}\right)}{A}\right)\]
+
+<p><em>If you want to learn how these formulas are derived i recommand this write-up by Wojtek Sterna:</em><br />
+<a href="https://wojtsterna.com/2024/01/09/field-of-view-horizontal-and-vertical-conversion/">Field of View – Horizontal and Vertical Conversion</a></p>
 
 <h3 id="what-is-reverse-z"><strong>What is Reverse Z?</strong></h3>
 
@@ -151,14 +171,25 @@ in front of the camera.</p>
 \begin{bmatrix}
 x_{scale} &amp; 0 &amp; 0 &amp; 0 \\
 0 &amp; y_{scale} &amp; 0 &amp; 0 \\
-0 &amp; 0 &amp; \dfrac{z_{near}}{z_{near} - z_{far}} &amp; 1 \\
-0 &amp; 0 &amp; \dfrac{z_{far} \cdot z_{near}}{z_{near} - z_{far}} &amp; 0
+0 &amp; 0 &amp; -\dfrac{z_{near}}{z_{far} - z_{near}} &amp; 1 \\
+0 &amp; 0 &amp; \dfrac{z_{far} \cdot z_{near}}{z_{far} - z_{near}} &amp; 0
 \end{bmatrix}\]
 
 <ul>
-  <li>Swapped near/far for m22</li>
-  <li>Swapped near/far and signs for m32</li>
+  <li>Swapped far to negative near for numerator at m22</li>
+  <li>Fliped signs for numerator at m32</li>
 </ul>
+
+<blockquote>
+  <p>This is the specific layout of the projection matrix used in Ghost of Tsushima, this is not an absolute layout for reverse-Z.<br />
+What defines a Reverse-Z projection is simply the depth mapping after the perspective divide:</p>
+  <ul>
+    <li>near → 1</li>
+    <li>far → 0</li>
+  </ul>
+
+  <p>As long as this mapping holds true, it qualifies as Reverse-Z.</p>
+</blockquote>
 
 <p><em>We’ll later see how this matrix fits into the full pipeline and how the 3D position finally lands on your screen.</em></p>
 
@@ -184,7 +215,7 @@ x_{scale} &amp; 0 &amp; 0 &amp; 0 \\
 </div>
 
       <div class="footer-col footer-col-3">
-        <p>Reverse Engineering the ViewProjection Pipeline in Ghost of Tsushima</p>
+        <p>Reversing The Construction Of The View-Projection Matrix</p>
       </div>
     </div>
 
