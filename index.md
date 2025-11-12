@@ -5,8 +5,8 @@ title: "Index"
 
 # Reversing The Construction Of The View-Projection Matrix (Game Engine Reversing)
 
-Welcome to my write-up series on reverse engineering the Rendering pipeline of an AAA game.
-
+Welcome to my write-up series on reverse engineering the Rendering pipeline of an AAA game.  
+Feel free to reach out to at: Discord: zer0_1rp Reddit: u/zer0_1rp UC: z1rp
 ## Parts
 
 - [Part 1: Introduction]({{ site.baseurl }}/part-1-intro)
