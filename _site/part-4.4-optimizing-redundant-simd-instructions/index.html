@@ -114,7 +114,7 @@
 
 <p><strong>Function traced back from:</strong></p>
 
-<p>sub_9AA040-&gt;sub_sub_7FBF10-&gt;sub_7FD060</p>
+<p>sub_9AA040 → sub_sub_7FBF10 → sub_7FD060</p>
 
 <p>Let’s First try to optimize sub_7FD060 which we previously renamed to ProjXViewMul.</p>
 
@@ -134,7 +134,7 @@
 <div class="ida-code"> <span class="var">v16</span>[<span class="num">3</span>] = <span class="var">ProjMat_3</span>
 </div>
 
-<p>But we cannot just type it into pseudo code, we need to patch it manually in assembly.</p>
+<p>But we cannot just type it into IDA’s pseudo code, we need to patch it manually in assembly.</p>
 
 <h3 id="finding-assembly-responsible-for-this-function">Finding Assembly responsible for this function:</h3>
 
@@ -151,7 +151,7 @@
 <p><img src="/ViewProj-Blog/assets/images/part-4.4/synchronize_ida_asm.png" alt="ESP-Image1" /></p>
 
 <p>here i will just do the quick and easy method of nopping out every instruction we don’t need, see which xmm register holds ProjMat_3 
-and simply storing it:</p>
+and simply storing it at the appropriate memory address:</p>
 
 <div class="asm64-code"><span class="kw">movaps</span> <span class="reg">v16</span>[3], <span class="reg">xmm</span>
 </div>

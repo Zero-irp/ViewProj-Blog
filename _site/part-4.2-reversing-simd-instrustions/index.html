@@ -267,7 +267,7 @@ We will see how it all comes together later down the write up.</p>
 <h3 id="manual-matrix-reconstruction-from-simd-operations-example">Manual Matrix Reconstruction from SIMD Operations (Example)</h3>
 
 <p><em>(This section is for readers who want to understand exactly how the View matrix gets constructed at the instruction level. 
-You can skip ahead to SIMD Matrix multiplication if you’re just here to learn)</em></p>
+You can skip ahead to SIMD Matrix multiplication if you’re just here to learn theory)</em></p>
 
 <p>We’re going to take a snapshot of the memory, walk through the SIMD instructions, and confirm how the final matrix rows are built.</p>
 
@@ -545,7 +545,7 @@ just selecting the last row of the projection matrix (ProjMat_3).</p>
 <ul>
   <li>No scaling,</li>
   <li>No shear,</li>
-  <li>It’s orthonormal (columns are perpendicular and unit-length),</li>
+  <li>It’s orthonormal (columns are perpendicular and unit-length)</li>
 </ul>
 
 <p>then \(R^{-1} = R^T\)</p>

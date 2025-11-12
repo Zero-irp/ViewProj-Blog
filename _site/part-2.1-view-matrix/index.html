@@ -59,7 +59,7 @@
   </header>
 
   <div class="post-content e-content" itemprop="articleBody">
-    <h3 id="introduction">Introduction</h3>
+    <h3 id="introduction"><strong>Introduction</strong></h3>
 
 <p>In 3D computer graphics, transformation matrices are the behind-the-scenes math that turns 3D world into something that actually 
 shows up on your 2D screen. Three particularly important matrices work together to take 3D world coordinates and transform them into 2D screen coordinates: the 
@@ -171,7 +171,7 @@ This <em>View Matrix</em> is made up of 4 fundamental vectors:</p>
   <li><strong>Right Vector</strong>:  which direction is right from the camera’s perspective</li>
   <li><strong>Up Vector</strong>: which direction is up from the camera’s perspective</li>
   <li><strong>Forward Vector</strong>: which direction the camera is facing</li>
-  <li><strong>Translation Vector</strong>: where the camera is positioned in the world</li>
+  <li><strong>Translation Vector</strong>: The component that translates the world to the camera’s origin</li>
 </ul>
 
 <p>Before diving into the fundamental vectors, let’s take a moment to understand row vs. column major order and left- vs. right-handed coordinate systems:</p>
@@ -214,8 +214,8 @@ It defines the camera’s local Y-axis</p>
 This Vector points in the direction the camera is facing. (Where the camera is looking at)
 It defines the camera’s local Z-axis</p>
 <blockquote>
-  <p>The forward vector direction is typically (LookAtTarget - CameraPosition).normalized() for Left-Handed systems like Direct-X but some coordinate systems (like right-handed 
-view space where Z goes into the screen), the view matrix uses the negative Z-axis, which would be (CameraPosition - LookAtTarget).normalized().</p>
+  <p>The forward vector direction is typically (LookAtTarget - CameraPosition).normalized() for Left-Handed systems like Direct-X but for right-handed systems
+the view matrix uses the negative Z-axis, which would be (CameraPosition - LookAtTarget).normalized().</p>
 </blockquote>
 
 <p>The components of orientation vectors (Right, Up, Forward) will always be in the range of -1.0 to 1.0.</p>

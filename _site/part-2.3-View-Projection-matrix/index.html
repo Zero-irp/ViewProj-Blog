@@ -72,7 +72,7 @@ The multiplication order depends on the graphics system, influenced by its row/c
 <p>This combined matrix allows you to transform a world-space position directly into clip space in one step. Instead of first 
 applying the view matrix, then the projection matrix separately, both transformations are handled at once:</p>
 
-<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">clipSpacePos</span> <span class="o">=</span> <span class="n">ViewProjection</span> <span class="o">*</span> <span class="n">worldSpacePos</span>
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">clipSpacePos</span> <span class="o">=</span> <span class="n">worldSpacePos</span> <span class="o">*</span> <span class="n">ViewProjection</span>
 </code></pre></div></div>
 
 <p>That takes a position straight from world space into clip space. Because this matrix is used constantly, 

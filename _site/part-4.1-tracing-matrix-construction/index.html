@@ -122,7 +122,7 @@ Alternatively, you can calculate the offset between the Cheat Engine base and th
 Instead, it appears that the function is primarily copying matrices from dynamic memory into this static location,  possibly from a 
 camera struct or a similar source.</p>
 
-<p>Let’s now see what function writes to the dynamic address that its copying from [rax+0x240].
+<p>Let’s now see what function writes to the dynamic address that its copying from - ([rax+0x240]):
 <img src="/ViewProj-Blog/assets/images/part-4.1/matrix-copy-ins-write.png" alt="ESP-Image1" /></p>
 
 <p>We can see one instruction reference “GhostOfTsushima.exe+7FC11B:”. Let’s select the current function and plug it into ida to see its pseudo code.</p>
@@ -190,7 +190,7 @@ That’ll give us a live snapshot of the arguments
 <img src="/ViewProj-Blog/assets/images/part-4.1/ce-7fbf10-breakpoint.png" alt="ESP-Image1" /></p>
 
 <p>For now, the only argument of interest is a1, which corresponds to RCX. In this particular call, RCX = 0x2D72494D200.<br />
-I consider it “interesting” because of the following code snippet:</p>
+I consider it “interesting” because of the following code snippet inside sub_7FBF10:</p>
 
 <div class="ida-code">  *(<span class="type">__m128</span> *)(<span class="var">a1</span> + <span class="num">0x550</span>) = *<span class="var">a2</span>;
   *(<span class="type">__m128</span> *)(<span class="var">a1</span> + <span class="num">0x430</span>) = *<span class="var">a3</span>;
@@ -302,14 +302,15 @@ The v16 array, which is made up of __m128 values, is gradually filled with the r
 
 <blockquote>
   <h3 id="why-not-just-invert-it">Why Not Just Invert It?</h3>
-  <p>If you already have both the Projection and the View-Projection matrices you can simply compute the View matrix using <em>Matrix algebra</em>.<br />
-if:<br />
-\(\begin{align}VP = P \times V\end{align}\)<br />
-therefore:<br />
-\(\begin{align} V = P^{-1} \times VP\end{align}\)<br />
-This holds true if the game uses the standard column-vector convention.<br />
-If it uses row-vectors:<br />
-\(\begin{align}V = VP \times P^{-1}\end{align}\)<br />
+  <p>If you already have both the Projection (P) and the View-Projection (VP) matrices, you can simply compute the View-matrix (V) using <em>Matrix algebra</em>.<br />
+If the game uses the row-vector convention (common in DirectX), where the order is:<br />
+\(\begin{align}VP = V \times P\end{align}\) <br />
+Therefore, you can solve for V:<br />
+\(\begin{align} V = VP \times P^{-1}\end{align}\)<br />
+If the game uses the column-vector convention (common in OpenGL), where the order is:<br />
+\(\begin{align}VP = P \times V\end{align}\) <br />
+Then, you can solve for V:<br />
+\(\begin{align}V = P^{-1} \times VP\end{align}\)  <br />
 But this lacks the insight into how the engine computes it internally, So we are going to do it the Hard Way.</p>
 </blockquote>
 

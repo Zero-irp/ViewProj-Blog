@@ -161,9 +161,8 @@ fighting to render because their depth values end up almost identical.</p>
 
 <p>Reverse Z simply flips this, the near plane becomes 1.0 and the far plane becomes 0.0. That way you get way better precision at far distances.</p>
 
-<p>This works because floating-point values are denser near zero, so by reversing the range, the GPU distributes precision where it’s actually needed, for objects farther away, 
-not just right 
-in front of the camera.</p>
+<p>This works because floating-point values are denser near zero, so by reversing the range, the GPU distributes precision where it’s actually needed which is for objects 
+farther away, not just right in front of the camera.</p>
 
 <h3 id="layout-of-reverse-z-projection-matrix"><strong>Layout of Reverse Z Projection Matrix</strong></h3>
 

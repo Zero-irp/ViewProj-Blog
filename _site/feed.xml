@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.4.1">Jekyll</generator><link href="http://localhost:4000/ViewProj-Blog/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/ViewProj-Blog/" rel="alternate" type="text/html" /><updated>2025-11-11T23:50:47+05:30</updated><id>http://localhost:4000/ViewProj-Blog/feed.xml</id><title type="html">Reversing The ViewProjection Matrix</title><subtitle>Reversing The Construction Of The View-Projection Matrix</subtitle><author><name>z1rp</name></author><entry><title type="html">Part 1: Introduction</title><link href="http://localhost:4000/ViewProj-Blog/part-1-intro/" rel="alternate" type="text/html" title="Part 1: Introduction" /><published>2025-07-17T00:00:00+05:30</published><updated>2025-07-17T00:00:00+05:30</updated><id>http://localhost:4000/ViewProj-Blog/part-1-intro</id><content type="html" xml:base="http://localhost:4000/ViewProj-Blog/part-1-intro/"><![CDATA[<h3 id="️-disclaimer">⚠️ Disclaimer:</h3>
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.4.1">Jekyll</generator><link href="http://localhost:4000/ViewProj-Blog/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/ViewProj-Blog/" rel="alternate" type="text/html" /><updated>2025-11-12T22:39:56+05:30</updated><id>http://localhost:4000/ViewProj-Blog/feed.xml</id><title type="html">Reversing The ViewProjection Matrix</title><subtitle>Reversing The Construction Of The View-Projection Matrix</subtitle><author><name>z1rp</name></author><entry><title type="html">Part 1: Introduction</title><link href="http://localhost:4000/ViewProj-Blog/part-1-intro/" rel="alternate" type="text/html" title="Part 1: Introduction" /><published>2025-07-17T00:00:00+05:30</published><updated>2025-07-17T00:00:00+05:30</updated><id>http://localhost:4000/ViewProj-Blog/part-1-intro</id><content type="html" xml:base="http://localhost:4000/ViewProj-Blog/part-1-intro/"><![CDATA[<h3 id="️-disclaimer">⚠️ Disclaimer:</h3>
 <p>The content on this blog is provided for educational and informational purposes only. I do not encourage, endorse, or support any illegal activity. 
 Any techniques, tools, or concepts discussed are intended solely for learning, research, defensive security, or experimentation in safe, legal 
 environments. Use this information responsibly and at your own risk. The author is not responsible for any misuse or legal consequences that may 
@@ -221,7 +221,7 @@ For example, an ESP might let you:</p>
 <ul>
   <li>Discord: z1rp#1337</li>
   <li>Email: <a href="mailto:Zer0_1rp@proton.me">Zer0_1rp@proton.me</a></li>
-</ul>]]></content><author><name>z1rp</name></author><summary type="html"><![CDATA[⚠️ Disclaimer: The content on this blog is provided for educational and informational purposes only. I do not encourage, endorse, or support any illegal activity. Any techniques, tools, or concepts discussed are intended solely for learning, research, defensive security, or experimentation in safe, legal environments. Use this information responsibly and at your own risk. The author is not responsible for any misuse or legal consequences that may result from applying what’s written here.]]></summary></entry><entry><title type="html">Part 2.1: View Matrix</title><link href="http://localhost:4000/ViewProj-Blog/part-2.1-view-matrix/" rel="alternate" type="text/html" title="Part 2.1: View Matrix" /><published>2025-07-17T00:00:00+05:30</published><updated>2025-07-17T00:00:00+05:30</updated><id>http://localhost:4000/ViewProj-Blog/part-2.1-view-matrix</id><content type="html" xml:base="http://localhost:4000/ViewProj-Blog/part-2.1-view-matrix/"><![CDATA[<h3 id="introduction">Introduction</h3>
+</ul>]]></content><author><name>z1rp</name></author><summary type="html"><![CDATA[⚠️ Disclaimer: The content on this blog is provided for educational and informational purposes only. I do not encourage, endorse, or support any illegal activity. Any techniques, tools, or concepts discussed are intended solely for learning, research, defensive security, or experimentation in safe, legal environments. Use this information responsibly and at your own risk. The author is not responsible for any misuse or legal consequences that may result from applying what’s written here.]]></summary></entry><entry><title type="html">Part 2.1: View Matrix</title><link href="http://localhost:4000/ViewProj-Blog/part-2.1-view-matrix/" rel="alternate" type="text/html" title="Part 2.1: View Matrix" /><published>2025-07-17T00:00:00+05:30</published><updated>2025-07-17T00:00:00+05:30</updated><id>http://localhost:4000/ViewProj-Blog/part-2.1-view-matrix</id><content type="html" xml:base="http://localhost:4000/ViewProj-Blog/part-2.1-view-matrix/"><![CDATA[<h3 id="introduction"><strong>Introduction</strong></h3>
 
 <p>In 3D computer graphics, transformation matrices are the behind-the-scenes math that turns 3D world into something that actually 
 shows up on your 2D screen. Three particularly important matrices work together to take 3D world coordinates and transform them into 2D screen coordinates: the 
@@ -333,7 +333,7 @@ This <em>View Matrix</em> is made up of 4 fundamental vectors:</p>
   <li><strong>Right Vector</strong>:  which direction is right from the camera’s perspective</li>
   <li><strong>Up Vector</strong>: which direction is up from the camera’s perspective</li>
   <li><strong>Forward Vector</strong>: which direction the camera is facing</li>
-  <li><strong>Translation Vector</strong>: where the camera is positioned in the world</li>
+  <li><strong>Translation Vector</strong>: The component that translates the world to the camera’s origin</li>
 </ul>
 
 <p>Before diving into the fundamental vectors, let’s take a moment to understand row vs. column major order and left- vs. right-handed coordinate systems:</p>
@@ -376,8 +376,8 @@ It defines the camera’s local Y-axis</p>
 This Vector points in the direction the camera is facing. (Where the camera is looking at)
 It defines the camera’s local Z-axis</p>
 <blockquote>
-  <p>The forward vector direction is typically (LookAtTarget - CameraPosition).normalized() for Left-Handed systems like Direct-X but some coordinate systems (like right-handed 
-view space where Z goes into the screen), the view matrix uses the negative Z-axis, which would be (CameraPosition - LookAtTarget).normalized().</p>
+  <p>The forward vector direction is typically (LookAtTarget - CameraPosition).normalized() for Left-Handed systems like Direct-X but for right-handed systems
+the view matrix uses the negative Z-axis, which would be (CameraPosition - LookAtTarget).normalized().</p>
 </blockquote>
 
 <p>The components of orientation vectors (Right, Up, Forward) will always be in the range of -1.0 to 1.0.</p>
@@ -545,9 +545,8 @@ fighting to render because their depth values end up almost identical.</p>
 
 <p>Reverse Z simply flips this, the near plane becomes 1.0 and the far plane becomes 0.0. That way you get way better precision at far distances.</p>
 
-<p>This works because floating-point values are denser near zero, so by reversing the range, the GPU distributes precision where it’s actually needed, for objects farther away, 
-not just right 
-in front of the camera.</p>
+<p>This works because floating-point values are denser near zero, so by reversing the range, the GPU distributes precision where it’s actually needed which is for objects 
+farther away, not just right in front of the camera.</p>
 
 <h3 id="layout-of-reverse-z-projection-matrix"><strong>Layout of Reverse Z Projection Matrix</strong></h3>
 
@@ -588,7 +587,7 @@ The multiplication order depends on the graphics system, influenced by its row/c
 <p>This combined matrix allows you to transform a world-space position directly into clip space in one step. Instead of first 
 applying the view matrix, then the projection matrix separately, both transformations are handled at once:</p>
 
-<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">clipSpacePos</span> <span class="o">=</span> <span class="n">ViewProjection</span> <span class="o">*</span> <span class="n">worldSpacePos</span>
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">clipSpacePos</span> <span class="o">=</span> <span class="n">worldSpacePos</span> <span class="o">*</span> <span class="n">ViewProjection</span>
 </code></pre></div></div>
 
 <p>That takes a position straight from world space into clip space. Because this matrix is used constantly, 
@@ -639,7 +638,7 @@ vectors (Right, Up, Forward) reflect real-time camera movement</p>
 <p>Now you’re going to get a lot of results. Keep refining your search (e.g., by changing camera angles and scanning again) until the 
 number of results stabilizes and stops changing, that’s usually a good sign you’ve isolated the relevant addresses.</p>
 
-<p>Now When reverse engineering a game, you’ll often find that the View, Projection, and View-Projection matrices live at fixed or static memory addresses.<br />
+<p>Now when reverse engineering a game, you’ll often find that the View, Projection, and View-Projection matrices (mostly) live at fixed or static memory addresses.<br />
 <strong>Why?</strong><br />
 Mainly because these matrices are core components of the game’s rendering pipeline and are global to the camera or render context.</p>
 
@@ -652,7 +651,7 @@ Mainly because these matrices are core components of the game’s rendering pipe
 
 <h3 id="confirmation-of-the-view-and-camera-world-matrices"><strong>Confirmation of the View and Camera World Matrices:</strong></h3>
 
-<p>In <a href="/ViewProj-Blog/part-2.1-view-matrix/">Part 2.1: View Matrix</a> we talked about the orthogonality and relations of the fundamental Vectors.<br />
+<p>In <a href="../part-2.1-view-matrix/#orthogonality-and-relations--optionalgood-to-know">Part 2.1: View Matrix</a> we talked about the orthogonality and relations of the fundamental Vectors.<br />
 Let’s open these matrices in reclass and use these relations to confirm it!</p>
 
 <p>Lets form an Hypothesis that this is the layout of the 4x4 Matrix:
@@ -665,7 +664,7 @@ Let’s open these matrices in reclass and use these relations to confirm it!</p
 </ul>
 
 <blockquote>
-  <p>This is handy in reverse engineering because you won’t always stumble on a perfect, clean 4×4 matrix in memory. Sometimes you’ll just find a couple 
+  <p>This is handy in reverse engineering because you can’t always hope to stumble upon a perfect, clean 4×4 matrix in memory. Sometimes you’ll just find a couple 
 of direction vectors (like Right and Up) sitting in random spots or being passed into a function. With some quick vector math, you can fill 
 in the missing one using a cross product, or sanity-check them with a dot product (should be zero if they’re perpendicular). That way, even 
 if the layout is weird or partially obfuscated, you can still piece it together.<br />
@@ -717,14 +716,17 @@ be close to (0, 0) since the Top-left corner is the origin of the screen (0, 0),
 
 <p>Here we can see the output screen coordinates matches closely to what we expected.</p>
 
+<p>We’ll cover how to get the entity’s 3D coordinates and how World-to-Screen works in detail later, for now, this confirms the matrix is correct.</p>
+
 <blockquote>
-  <p>We’ll cover how to get the entity’s 3D coordinates and how World-to-Screen works in detail later, for now, this confirms the matrix is correct.</p>
+  <p>Quick Note: The top left is (0,0) for Direct-X in the context of Screen Space Coordinates but for Normalized Device Coordinates (NDC) the center of the screen is (0,0) and the 
+top left would be (-1,1).</p>
 </blockquote>
 
 <h2 id="other-ways-to-get-the-vp-matrix"><strong>Other ways to get the VP matrix</strong></h2>
 
 <p>You don’t have to rely on pure luck to find the VP matrix. Instead of just stumbling across it, you can track it down by first finding the 
-camera world matrix, view matrix, and projection matrix, then checking which functions access these matrices.</p>
+camera world matrix, view matrix, or projection matrix, then checking which functions access these matrices.</p>
 
 <p>When digging through those functions in IDA, look for clues like:</p>
 
@@ -751,8 +753,8 @@ If you ever want to test your sanity, try reversing a Denuvo game.</p>
 <p>Now that we have confirmed that this is in fact the view projection matrix lets try to reconstruct it manually</p>
 
 <ol>
-  <li>Take the suspected Projection Matrix</li>
-  <li>Multiply it by the inverse of the Camera World Matrix</li>
+  <li>Take the inverse of the Camera World Matrix</li>
+  <li>Multiply it with the suspected Projection Matrix</li>
 </ol>
 
 <p><img src="/ViewProj-Blog/assets/images/part-3/discrepency-vp-with-vp-multiply.png" alt="ESP-Image1" /><br />
@@ -821,7 +823,7 @@ Alternatively, you can calculate the offset between the Cheat Engine base and th
 Instead, it appears that the function is primarily copying matrices from dynamic memory into this static location,  possibly from a 
 camera struct or a similar source.</p>
 
-<p>Let’s now see what function writes to the dynamic address that its copying from [rax+0x240].
+<p>Let’s now see what function writes to the dynamic address that its copying from - ([rax+0x240]):
 <img src="/ViewProj-Blog/assets/images/part-4.1/matrix-copy-ins-write.png" alt="ESP-Image1" /></p>
 
 <p>We can see one instruction reference “GhostOfTsushima.exe+7FC11B:”. Let’s select the current function and plug it into ida to see its pseudo code.</p>
@@ -889,7 +891,7 @@ That’ll give us a live snapshot of the arguments
 <img src="/ViewProj-Blog/assets/images/part-4.1/ce-7fbf10-breakpoint.png" alt="ESP-Image1" /></p>
 
 <p>For now, the only argument of interest is a1, which corresponds to RCX. In this particular call, RCX = 0x2D72494D200.<br />
-I consider it “interesting” because of the following code snippet:</p>
+I consider it “interesting” because of the following code snippet inside sub_7FBF10:</p>
 
 <div class="ida-code">  *(<span class="type">__m128</span> *)(<span class="var">a1</span> + <span class="num">0x550</span>) = *<span class="var">a2</span>;
   *(<span class="type">__m128</span> *)(<span class="var">a1</span> + <span class="num">0x430</span>) = *<span class="var">a3</span>;
@@ -1001,14 +1003,15 @@ The v16 array, which is made up of __m128 values, is gradually filled with the r
 
 <blockquote>
   <h3 id="why-not-just-invert-it">Why Not Just Invert It?</h3>
-  <p>If you already have both the Projection and the View-Projection matrices you can simply compute the View matrix using <em>Matrix algebra</em>.<br />
-if:<br />
-\(\begin{align}VP = P \times V\end{align}\)<br />
-therefore:<br />
-\(\begin{align} V = P^{-1} \times VP\end{align}\)<br />
-This holds true if the game uses the standard column-vector convention.<br />
-If it uses row-vectors:<br />
-\(\begin{align}V = VP \times P^{-1}\end{align}\)<br />
+  <p>If you already have both the Projection (P) and the View-Projection (VP) matrices, you can simply compute the View-matrix (V) using <em>Matrix algebra</em>.<br />
+If the game uses the row-vector convention (common in DirectX), where the order is:<br />
+\(\begin{align}VP = V \times P\end{align}\) <br />
+Therefore, you can solve for V:<br />
+\(\begin{align} V = VP \times P^{-1}\end{align}\)<br />
+If the game uses the column-vector convention (common in OpenGL), where the order is:<br />
+\(\begin{align}VP = P \times V\end{align}\) <br />
+Then, you can solve for V:<br />
+\(\begin{align}V = P^{-1} \times VP\end{align}\)  <br />
 But this lacks the insight into how the engine computes it internally, So we are going to do it the Hard Way.</p>
 </blockquote>
 
@@ -1221,7 +1224,7 @@ We will see how it all comes together later down the write up.</p>
 <h3 id="manual-matrix-reconstruction-from-simd-operations-example">Manual Matrix Reconstruction from SIMD Operations (Example)</h3>
 
 <p><em>(This section is for readers who want to understand exactly how the View matrix gets constructed at the instruction level. 
-You can skip ahead to SIMD Matrix multiplication if you’re just here to learn)</em></p>
+You can skip ahead to SIMD Matrix multiplication if you’re just here to learn theory)</em></p>
 
 <p>We’re going to take a snapshot of the memory, walk through the SIMD instructions, and confirm how the final matrix rows are built.</p>
 
@@ -1499,7 +1502,7 @@ just selecting the last row of the projection matrix (ProjMat_3).</p>
 <ul>
   <li>No scaling,</li>
   <li>No shear,</li>
-  <li>It’s orthonormal (columns are perpendicular and unit-length),</li>
+  <li>It’s orthonormal (columns are perpendicular and unit-length)</li>
 </ul>
 
 <p>then \(R^{-1} = R^T\)</p>
@@ -1917,7 +1920,7 @@ adding the translation into the VP matrix which did not have translation.</p>
 
 <h3 id="even-more-redundant-simd-operations">Even More redundant SIMD operations</h3>
 
-<p>there are useless vec4 × mat4 littered throughout the function, like here:</p>
+<p>There are useless vec4 × mat4 littered throughout the function, like here:</p>
 
 <div class="ida-code">*(<span class="type">__m128</span> *)(<span class="var">a1</span> + <span class="num">0x260</span>) = <span class="fn">_mm_add_ps</span>(
                             <span class="fn">_mm_add_ps</span>(
@@ -2076,7 +2079,7 @@ translation component applied yet.</p>
 </ul>
 
 <blockquote>
-  <p>Note: Multiplying the negated camera position with the ViewProjection matrix (without the translation term) is mathematically equivalent to
+  <p>Note: Multiplying the negated camera position with the ViewProjection matrix (without the translation component) is mathematically equivalent to
 –dot(vec, CamPos) as explained in part <a href="../part-4.2-reversing-simd-instrustions/#fast-inverse-for-orthonormal-matrices">4.2: Fast inverse for orthonormal Matrices</a></p>
 </blockquote>
 
@@ -2086,7 +2089,7 @@ translation component applied yet.</p>
 
 <p><img src="/ViewProj-Blog/assets/images/part-4.2/cam-world-matrix.png" alt="ESP-Image1" /></p>
 
-<p>And the Projection Matrix as:</p>
+<p>And the Projection Matrix:</p>
 
 <p><img src="/ViewProj-Blog/assets/images/part-4.3/projection_matrix.png" alt="ESP-Image1" /></p>
 
@@ -2157,6 +2160,10 @@ translation component applied yet.</p>
 <p>Comparing against in-game memory:</p>
 
 <p><img src="/ViewProj-Blog/assets/images/part-4.3/VP_matrix_full.png" alt="ESP-Image1" /></p>
+
+<blockquote>
+  <p>Higher float presicon was used</p>
+</blockquote>
 
 <p>Doing this in one Matrix Multiply we get a View Matrix that is built something like this:</p>
 
@@ -2262,7 +2269,7 @@ As long as the engine is consistent in how it expects and inverts it, the result
 Not only does this resolve the original discrepancy, but it also provides a concrete bridge between mathematical theory, graphics pipelines, and 
 reverse engineering practice.</p>
 
-<p><em>Next up: Trimming down redundant SIMD instructions using assembly patching and trampoline hooking. Don’t expect a real performance gain here, 
+<p><em>Next up: Trimming down redundant SIMD instructions using assembly patching and detour hooking. Don’t expect a real performance gain here, 
 it’s more about recognizing wasted ops and experimenting with how far we can push the pipeline by hand.</em></p>]]></content><author><name>z1rp</name></author><summary type="html"><![CDATA[]]></summary></entry><entry><title type="html">4.4: Optimizing Redundant SIMD Instructions</title><link href="http://localhost:4000/ViewProj-Blog/part-4.4-optimizing-redundant-simd-instructions/" rel="alternate" type="text/html" title="4.4: Optimizing Redundant SIMD Instructions" /><published>2025-07-17T00:00:00+05:30</published><updated>2025-07-17T00:00:00+05:30</updated><id>http://localhost:4000/ViewProj-Blog/part-4.4-optimizing-redundant-simd-instructions</id><content type="html" xml:base="http://localhost:4000/ViewProj-Blog/part-4.4-optimizing-redundant-simd-instructions/"><![CDATA[<style>
 .asm64-code {
   background: #1e1e1e;
@@ -2318,7 +2325,7 @@ it’s more about recognizing wasted ops and experimenting with how far we can p
 
 <p><strong>Function traced back from:</strong></p>
 
-<p>sub_9AA040-&gt;sub_sub_7FBF10-&gt;sub_7FD060</p>
+<p>sub_9AA040 → sub_sub_7FBF10 → sub_7FD060</p>
 
 <p>Let’s First try to optimize sub_7FD060 which we previously renamed to ProjXViewMul.</p>
 
@@ -2338,7 +2345,7 @@ it’s more about recognizing wasted ops and experimenting with how far we can p
 <div class="ida-code"> <span class="var">v16</span>[<span class="num">3</span>] = <span class="var">ProjMat_3</span>
 </div>
 
-<p>But we cannot just type it into pseudo code, we need to patch it manually in assembly.</p>
+<p>But we cannot just type it into IDA’s pseudo code, we need to patch it manually in assembly.</p>
 
 <h3 id="finding-assembly-responsible-for-this-function">Finding Assembly responsible for this function:</h3>
 
@@ -2355,7 +2362,7 @@ it’s more about recognizing wasted ops and experimenting with how far we can p
 <p><img src="/ViewProj-Blog/assets/images/part-4.4/synchronize_ida_asm.png" alt="ESP-Image1" /></p>
 
 <p>here i will just do the quick and easy method of nopping out every instruction we don’t need, see which xmm register holds ProjMat_3 
-and simply storing it:</p>
+and simply storing it at the appropriate memory address:</p>
 
 <div class="asm64-code"><span class="kw">movaps</span> <span class="reg">v16</span>[3], <span class="reg">xmm</span>
 </div>
@@ -2577,7 +2584,7 @@ jump instruction. When that patched area executes, the CPU follows your detour.<
 
 <p>Now in your detour you can implement your own custom code to do whatever you want it to, but keep in mind it is critical to preserve the original execution flow. 
 This means you must carefully manage the CPU’s state (registers, flags, and stack) to ensure the program continues to behave correctly after your code runs.<br />
-Common pitfalls include creating dead ends, returning incorrectly, corrupting registers, misalignment of stack (ABI convention RSP % 16 == 0 when a call is executed)</p>
+Common pitfalls include creating dead ends, returning incorrectly, corrupting registers, misalignment of stack (ABI convention RSP % 16 == 0 when a call is executed) etc.</p>
 
 <p>Think of it this way:</p>
 
@@ -2599,7 +2606,7 @@ a very overengineered way that takes away performance (marginally). But scattere
           <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">CamPos_Negated_w1_dup</span>, <span class="var">CamPos_Negated_w1_dup</span>, <span class="num">0xFF</span>), <span class="var">VP_NoTrans_Row3</span>));
 </div>
 
-<p>This construction of v17 is important as this is the one that constructs ViewProjection matrix with the translation. This function is scattered 
+<p>This construction of v17 is important as this is the one that adds translation to the ViewProjection matrix. This function is scattered 
 among the overengineered SIMD ops.</p>
 
 <h3 id="heres-the-approach"><strong>Here’s the approach:</strong></h3>
@@ -2607,7 +2614,7 @@ among the overengineered SIMD ops.</p>
 <ul>
   <li>Match assembly to pseudocode: I’ll go through the disassembly and identify which SIMD instructions actually correspond to the math we care 
 about. The rest is junk.</li>
-  <li>Build a custom hook: In a new code cave, I’ll re-implement only the useful SIMD ops in the correct order. This way, 
+  <li>Build a custom hook: In a code cave, I’ll re-implement only the useful SIMD ops in the correct order. This way, 
 the essential calculations survive but the redundant ops get skipped.</li>
   <li>Redirect execution flow: At the entry point of the redundant section, I’ll overwrite the first 5 bytes with a jmp to my code cave.
     <ul>
@@ -2630,7 +2637,7 @@ skipping all redundant operations.</p>
 
 <p>Now, before diving in</p>
 
-<p>I won’t be showing how to find code caves here, that is out of scope for this blog. Just know that in this case, I’ll be using a code cave that’s 
+<p>I won’t be showing how to find code caves here, that is out of scope for this write-up. Just know that in this case, I’ll be using a code cave that’s 
 conveniently located close enough to our target function.</p>
 
 <h3 id="5-byte-jmp-hook-vs-12-byte-jmp-hook"><strong>5 Byte Jmp hook vs 12 Byte Jmp hook</strong></h3>
@@ -2668,7 +2675,7 @@ VirtualAllocEx. But in that case, the E9 relative jump won’t cut it anymore un
 *(<span class="type">__m128</span> *)(<span class="var">a1</span> + <span class="num">0x270</span>) = <span class="var">v17</span>
 </div>
 
-<p>We will add this in our code-cave (Keep in mind a1 is rbp in this specific case):</p>
+<p>We will add this in our code-cave (Keep in mind a1 refers to rbp in this specific case):</p>
 
 <ul>
   <li>VP_NoTrans_Row0 holds its value inside xmm8</li>

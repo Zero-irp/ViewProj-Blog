@@ -39,7 +39,7 @@ Lets start searching for interesting matrices in memory in ghost of tsushima!
 Now you're going to get a lot of results. Keep refining your search (e.g., by changing camera angles and scanning again) until the 
 number of results stabilizes and stops changing, that's usually a good sign you've isolated the relevant addresses.  
 
-Now When reverse engineering a game, you’ll often find that the View, Projection, and View-Projection matrices live at fixed or static memory addresses.  
+Now when reverse engineering a game, you’ll often find that the View, Projection, and View-Projection matrices (mostly) live at fixed or static memory addresses.  
 **Why?**  
 Mainly because these matrices are core components of the game's rendering pipeline and are global to the camera or render context.  
 
@@ -52,7 +52,7 @@ Here the first 4x4 matrix look like the *Camera World Matrix* and the second 4x4
 
 ### **Confirmation of the View and Camera World Matrices:**
 
-In [Part 2.1: View Matrix](/ViewProj-Blog/part-2.1-view-matrix/) we talked about the orthogonality and relations of the fundamental Vectors.  
+In [Part 2.1: View Matrix](../part-2.1-view-matrix/#orthogonality-and-relations--optionalgood-to-know) we talked about the orthogonality and relations of the fundamental Vectors.  
 Let's open these matrices in reclass and use these relations to confirm it!
 
 Lets form an Hypothesis that this is the layout of the 4x4 Matrix:
@@ -62,7 +62,7 @@ Using its relations we can see:
 - Dot((-0.104, -0.06, 0.993), (0.5, -0.866, 0.00)) = *-3.9999999999998E-5* which is basically just *0* and is just floating-point precision error.
 - Cross((-0.104, -0.06, 0.993), (0.5, -0.866, 0.00)) = *(0.860, 0.496, 0.121)* which basically gave us the second row (starting row's from 0)
 
->This is handy in reverse engineering because you won’t always stumble on a perfect, clean 4×4 matrix in memory. Sometimes you’ll just find a couple 
+>This is handy in reverse engineering because you can't always hope to stumble upon a perfect, clean 4×4 matrix in memory. Sometimes you’ll just find a couple 
 of direction vectors (like Right and Up) sitting in random spots or being passed into a function. With some quick vector math, you can fill 
 in the missing one using a cross product, or sanity-check them with a dot product (should be zero if they’re perpendicular). That way, even 
 if the layout is weird or partially obfuscated, you can still piece it together.  
@@ -109,12 +109,15 @@ be close to (0, 0) since the Top-left corner is the origin of the screen (0, 0),
 
 Here we can see the output screen coordinates matches closely to what we expected.
  
->We'll cover how to get the entity's 3D coordinates and how World-to-Screen works in detail later, for now, this confirms the matrix is correct.
+We'll cover how to get the entity's 3D coordinates and how World-to-Screen works in detail later, for now, this confirms the matrix is correct.
+
+> Quick Note: The top left is (0,0) for Direct-X in the context of Screen Space Coordinates but for Normalized Device Coordinates (NDC) the center of the screen is (0,0) and the 
+top left would be (-1,1).
 
 ## **Other ways to get the VP matrix**
 
 You don’t have to rely on pure luck to find the VP matrix. Instead of just stumbling across it, you can track it down by first finding the 
-camera world matrix, view matrix, and projection matrix, then checking which functions access these matrices.
+camera world matrix, view matrix, or projection matrix, then checking which functions access these matrices.
 
 When digging through those functions in IDA, look for clues like:
 
@@ -138,8 +141,8 @@ If you ever want to test your sanity, try reversing a Denuvo game.
 
 Now that we have confirmed that this is in fact the view projection matrix lets try to reconstruct it manually  
 
-1. Take the suspected Projection Matrix
-2. Multiply it by the inverse of the Camera World Matrix
+1. Take the inverse of the Camera World Matrix
+2. Multiply it with the suspected Projection Matrix
 
 ![ESP-Image1](/ViewProj-Blog/assets/images/part-3/discrepency-vp-with-vp-multiply.png)  
 Here for some reason it doesn't quite match's up although quite similar.    

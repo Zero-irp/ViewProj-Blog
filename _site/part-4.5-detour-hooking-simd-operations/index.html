@@ -227,7 +227,7 @@ jump instruction. When that patched area executes, the CPU follows your detour.<
 
 <p>Now in your detour you can implement your own custom code to do whatever you want it to, but keep in mind it is critical to preserve the original execution flow. 
 This means you must carefully manage the CPU’s state (registers, flags, and stack) to ensure the program continues to behave correctly after your code runs.<br />
-Common pitfalls include creating dead ends, returning incorrectly, corrupting registers, misalignment of stack (ABI convention RSP % 16 == 0 when a call is executed)</p>
+Common pitfalls include creating dead ends, returning incorrectly, corrupting registers, misalignment of stack (ABI convention RSP % 16 == 0 when a call is executed) etc.</p>
 
 <p>Think of it this way:</p>
 
@@ -249,7 +249,7 @@ a very overengineered way that takes away performance (marginally). But scattere
           <span class="fn">_mm_mul_ps</span>(<span class="fn">_mm_shuffle_ps</span>(<span class="var">CamPos_Negated_w1_dup</span>, <span class="var">CamPos_Negated_w1_dup</span>, <span class="num">0xFF</span>), <span class="var">VP_NoTrans_Row3</span>));
 </div>
 
-<p>This construction of v17 is important as this is the one that constructs ViewProjection matrix with the translation. This function is scattered 
+<p>This construction of v17 is important as this is the one that adds translation to the ViewProjection matrix. This function is scattered 
 among the overengineered SIMD ops.</p>
 
 <h3 id="heres-the-approach"><strong>Here’s the approach:</strong></h3>
@@ -257,7 +257,7 @@ among the overengineered SIMD ops.</p>
 <ul>
   <li>Match assembly to pseudocode: I’ll go through the disassembly and identify which SIMD instructions actually correspond to the math we care 
 about. The rest is junk.</li>
-  <li>Build a custom hook: In a new code cave, I’ll re-implement only the useful SIMD ops in the correct order. This way, 
+  <li>Build a custom hook: In a code cave, I’ll re-implement only the useful SIMD ops in the correct order. This way, 
 the essential calculations survive but the redundant ops get skipped.</li>
   <li>Redirect execution flow: At the entry point of the redundant section, I’ll overwrite the first 5 bytes with a jmp to my code cave.
     <ul>
@@ -280,7 +280,7 @@ skipping all redundant operations.</p>
 
 <p>Now, before diving in</p>
 
-<p>I won’t be showing how to find code caves here, that is out of scope for this blog. Just know that in this case, I’ll be using a code cave that’s 
+<p>I won’t be showing how to find code caves here, that is out of scope for this write-up. Just know that in this case, I’ll be using a code cave that’s 
 conveniently located close enough to our target function.</p>
 
 <h3 id="5-byte-jmp-hook-vs-12-byte-jmp-hook"><strong>5 Byte Jmp hook vs 12 Byte Jmp hook</strong></h3>
@@ -318,7 +318,7 @@ VirtualAllocEx. But in that case, the E9 relative jump won’t cut it anymore un
 *(<span class="type">__m128</span> *)(<span class="var">a1</span> + <span class="num">0x270</span>) = <span class="var">v17</span>
 </div>
 
-<p>We will add this in our code-cave (Keep in mind a1 is rbp in this specific case):</p>
+<p>We will add this in our code-cave (Keep in mind a1 refers to rbp in this specific case):</p>
 
 <ul>
   <li>VP_NoTrans_Row0 holds its value inside xmm8</li>

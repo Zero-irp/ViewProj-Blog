@@ -147,7 +147,7 @@ safely drop in our own custom code.</p>
     <span class="type">HANDLE</span> <span class="var">hProcess</span>,        <span class="comment">// Handle to target process</span>
     <span class="type">LPVOID</span> <span class="var">lpAddress</span>,       <span class="comment">// Desired address (NULL lets the system decide)</span>
     <span class="type">SIZE_T</span> <span class="var">dwSize</span>,          <span class="comment">// Size of memory block</span>
-    <span class="type">DWORD</span> <span class="var">flAllocationType</span>, <span class="comment">// MEM_COMMIT, MEM_RESERVE, or both</span>
+    <span class="type">DWORD</span> <span class="var">flAllocationType</span>, <span class="comment">// MEM_COMMIT | MEM_RESERVE for reserving and allocating physical memory</span>
     <span class="type">DWORD</span> <span class="var">flProtect</span>         <span class="comment">// Memory protection (e.g., PAGE_EXECUTE_READWRITE)</span>
 );
 </div>
@@ -168,7 +168,7 @@ safely drop in our own custom code.</p>
   <li>hProcess → the handle we opened with OpenProcess.</li>
   <li>NULL → we’re not picky about the address; Windows picks a safe spot.</li>
   <li>128 → just enough space for our trampoline code and a jump back.</li>
-  <li>MEM_COMMIT, MEM_RESERVE → allocate and commit memory in one call.</li>
+  <li>MEM_COMMIT &amp; MEM_RESERVE → allocate and commit memory in one call.</li>
   <li>PAGE_EXECUTE_READWRITE → we need the memory to run code, so it must be executable.</li>
   <li>reserve → Pointer to our Allocated Memory</li>
 </ul>
@@ -232,8 +232,9 @@ our trampoline, the game will break because those instructions were never execut
 
 <p><strong>Step 2: Writing the Jump</strong></p>
 
-<p>To hook execution, we need to write a 64-bit absolute jump at our target instruction. A direct jump won’t fit in 5 bytes on x64, so we build 
-it in two steps:</p>
+<p>We need to insert an absolute jump to our allocated trampoline. The standard 5-byte relative jump instruction (E9 rel32) is inadequate because VirtualAllocEx rarely allocates 
+memory within the ±2GB range required for relative addressing. Therefore, to encode the full 64-bit absolute address, which won’t fit in the initial 5 bytes, we must build the 
+jump in two steps:</p>
 
 <ol>
   <li>Move the trampoline address into a register. We use mov rax, &lt;address&gt; (10 bytes). This loads the pointer to our allocated memory into rax.</li>
@@ -364,11 +365,11 @@ Because x64 instructions can’t encode a full 64-bit absolute address directly.
 
 </div>
 
-<p>Now after execution of our payload and stolen in our allocated memory it jumps back to our original instruction as to not break flow of execution.</p>
+<p>Now after execution of our payload and the stolen bytes in our allocated memory it jumps back to our original instruction as to not break flow of execution.</p>
 
 <p><strong>Reading entities back in C++</strong></p>
 
-<p>Now we just poll that slot from our tool and log new entities as they appear:</p>
+<p>Now, our external process polls the reserved memory region (entityAddr) in the target process to monitor for new entity pointers:</p>
 
 <div class="cpp-code"><span class="kw">while</span> (<span class="kw">true</span>)
 {
@@ -391,7 +392,7 @@ Because x64 instructions can’t encode a full 64-bit absolute address directly.
   <p>You could also check if curEntity has valid health, position or some specific flag to ensure only valid entities are passed into our unordered_set.</p>
 </blockquote>
 
-<p>This way, every time the Z-axis instruction fires for some entity, we capture it once and stash it in uniqueEntities. Later, we can loop 
+<p>This way, every time the Z-axis instruction executes for some entity, we capture it once and stash it in uniqueEntities. Later, we can loop 
 through this set and use their positions for ESP drawing.</p>
 
 
