@@ -1,4 +1,30 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.4.1">Jekyll</generator><link href="http://localhost:4000/ViewProj-Blog/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/ViewProj-Blog/" rel="alternate" type="text/html" /><updated>2025-11-13T00:19:13+05:30</updated><id>http://localhost:4000/ViewProj-Blog/feed.xml</id><title type="html">Reversing The ViewProjection Matrix</title><subtitle>Reversing The Construction Of The View-Projection Matrix</subtitle><author><name>z1rp</name></author><entry><title type="html">Part 1: Introduction</title><link href="http://localhost:4000/ViewProj-Blog/part-1-intro/" rel="alternate" type="text/html" title="Part 1: Introduction" /><published>2025-07-17T00:00:00+05:30</published><updated>2025-07-17T00:00:00+05:30</updated><id>http://localhost:4000/ViewProj-Blog/part-1-intro</id><content type="html" xml:base="http://localhost:4000/ViewProj-Blog/part-1-intro/"><![CDATA[<h3 id="️-disclaimer">⚠️ Disclaimer:</h3>
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="4.4.1">Jekyll</generator><link href="http://localhost:4000/ViewProj-Blog/feed.xml" rel="self" type="application/atom+xml" /><link href="http://localhost:4000/ViewProj-Blog/" rel="alternate" type="text/html" /><updated>2026-06-29T21:19:39+05:30</updated><id>http://localhost:4000/ViewProj-Blog/feed.xml</id><title type="html">Reversing The ViewProjection Matrix</title><subtitle>Reversing The Construction Of The View-Projection Matrix</subtitle><author><name>z1rp</name></author><entry><title type="html">Part 1: Introduction</title><link href="http://localhost:4000/ViewProj-Blog/part-1-intro/" rel="alternate" type="text/html" title="Part 1: Introduction" /><published>2025-07-17T00:00:00+05:30</published><updated>2025-07-17T00:00:00+05:30</updated><id>http://localhost:4000/ViewProj-Blog/part-1-intro</id><content type="html" xml:base="http://localhost:4000/ViewProj-Blog/part-1-intro/"><![CDATA[<style>
+.post-nav {
+  display: flex;
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid #444;
+  font-family: Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 15px;
+}
+.post-nav a {
+  color: #569cd6;
+  text-decoration: none;
+  padding: 10px 16px;
+  background: #1e1e1e;
+  border-radius: 6px;
+  transition: background 0.2s ease;
+}
+.post-nav a:hover {
+  background: #2d2d2d;
+}
+/* This specific class pushes the button to the right */
+.next-only {
+  margin-left: auto;
+}
+</style>
+
+<h3 id="️-disclaimer">⚠️ Disclaimer:</h3>
 <p>The content on this blog is provided for educational and informational purposes only. I do not encourage, endorse, or support any illegal activity. 
 Any techniques, tools, or concepts discussed are intended solely for learning, research, defensive security, or experimentation in safe, legal 
 environments. Use this information responsibly and at your own risk. The author is not responsible for any misuse or legal consequences that may 
@@ -8,7 +34,7 @@ result from applying what’s written here.</p>
 
 <p>It all began when I was messing around with Ghost of Tsushima, trying to locate the View-Projection matrix to build a working world-to-screen (w2s) function. I eventually found it 
 and it worked as intended. But while digging through memory, I came across several other interesting matrices. Two of them stood out: the Camera World Matrix and the Perspective 
-Projection Matrix. I figured i could reconstruct the View-Projection matrix myself by multiplying the inverse of the camera world matrix with projection matrix the as most Direct-X games 
+Projection Matrix. I figured i could reconstruct the View-Projection matrix myself by multiplying the inverse of the camera world matrix with projection matrix as most Direct-X games 
 do. But the result didn’t match the actual View-Projection matrix.
 Curious, I started tracing the functions that write to the View-Projection matrix using IDA Pro, ReClass, and Cheat Engine. That’s when I discovered the engine was building 
 the matrix in a non-standard way, or at least, a way that was unfamiliar to me and different from the basic graphics pipeline I was expecting.</p>
@@ -222,8 +248,35 @@ For example, an ESP might let you:</p>
   <li>Discord: zer0_1rp</li>
   <li>Email: <a href="mailto:Zer0_1rp@proton.me">Zer0_1rp@proton.me</a></li>
   <li>Reddit: u/zer0_1rp</li>
-  <li>UC: z1rp</li>
-</ul>]]></content><author><name>z1rp</name></author><summary type="html"><![CDATA[⚠️ Disclaimer: The content on this blog is provided for educational and informational purposes only. I do not encourage, endorse, or support any illegal activity. Any techniques, tools, or concepts discussed are intended solely for learning, research, defensive security, or experimentation in safe, legal environments. Use this information responsibly and at your own risk. The author is not responsible for any misuse or legal consequences that may result from applying what’s written here.]]></summary></entry><entry><title type="html">Part 2.1: View Matrix</title><link href="http://localhost:4000/ViewProj-Blog/part-2.1-view-matrix/" rel="alternate" type="text/html" title="Part 2.1: View Matrix" /><published>2025-07-17T00:00:00+05:30</published><updated>2025-07-17T00:00:00+05:30</updated><id>http://localhost:4000/ViewProj-Blog/part-2.1-view-matrix</id><content type="html" xml:base="http://localhost:4000/ViewProj-Blog/part-2.1-view-matrix/"><![CDATA[<h3 id="introduction"><strong>Introduction</strong></h3>
+  <li>X: zer0_1rp</li>
+</ul>
+
+<div class="post-nav">
+  <a class="next-only" href="/ViewProj-Blog/part-2.1-view-matrix/">Part 2.1: View Matrix &raquo;</a>
+</div>]]></content><author><name>z1rp</name></author><summary type="html"><![CDATA[]]></summary></entry><entry><title type="html">Part 2.1: View Matrix</title><link href="http://localhost:4000/ViewProj-Blog/part-2.1-view-matrix/" rel="alternate" type="text/html" title="Part 2.1: View Matrix" /><published>2025-07-17T00:00:00+05:30</published><updated>2025-07-17T00:00:00+05:30</updated><id>http://localhost:4000/ViewProj-Blog/part-2.1-view-matrix</id><content type="html" xml:base="http://localhost:4000/ViewProj-Blog/part-2.1-view-matrix/"><![CDATA[<style>
+.post-nav {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid #444;
+  font-family: Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 15px;
+}
+.post-nav a {
+  color: #569cd6;
+  text-decoration: none;
+  padding: 10px 16px;
+  background: #1e1e1e;
+  border-radius: 6px;
+  transition: background 0.2s ease;
+}
+.post-nav a:hover {
+  background: #2d2d2d;
+}
+</style>
+
+<h3 id="introduction"><strong>Introduction</strong></h3>
 
 <p>In 3D computer graphics, transformation matrices are the behind-the-scenes math that turns 3D world into something that actually 
 shows up on your 2D screen. Three particularly important matrices work together to take 3D world coordinates and transform them into 2D screen coordinates: the 
@@ -445,7 +498,35 @@ explaining the math behind matrices and 3d graphics theory:</strong><br />
 
 <p><em>All of these mathematical relationships, spatial orientations, and foundational concepts might seem unnecessary but they are crucial. We’ll
 rely on this knowledge to accurately identify the different matrices in memory, decode how the game constructs them, and understand exactly
-how the camera views the world.</em></p>]]></content><author><name>z1rp</name></author><summary type="html"><![CDATA[Introduction]]></summary></entry><entry><title type="html">Part 2.2: Projection Matrix</title><link href="http://localhost:4000/ViewProj-Blog/part-2.2-projection-matrix/" rel="alternate" type="text/html" title="Part 2.2: Projection Matrix" /><published>2025-07-17T00:00:00+05:30</published><updated>2025-07-17T00:00:00+05:30</updated><id>http://localhost:4000/ViewProj-Blog/part-2.2-projection-matrix</id><content type="html" xml:base="http://localhost:4000/ViewProj-Blog/part-2.2-projection-matrix/"><![CDATA[<h3 id="what-is-the-projection-matrix"><strong>What is the Projection Matrix?</strong></h3>
+how the camera views the world.</em></p>
+
+<div class="post-nav">
+  <a href="/ViewProj-Blog/part-1-intro/">&laquo; Part 1: Introduction</a>
+  <a href="/ViewProj-Blog/part-2.2-projection-matrix/">Part 2.2: Projection Matrix &raquo;</a>
+</div>]]></content><author><name>z1rp</name></author><summary type="html"><![CDATA[]]></summary></entry><entry><title type="html">Part 2.2: Projection Matrix</title><link href="http://localhost:4000/ViewProj-Blog/part-2.2-projection-matrix/" rel="alternate" type="text/html" title="Part 2.2: Projection Matrix" /><published>2025-07-17T00:00:00+05:30</published><updated>2025-07-17T00:00:00+05:30</updated><id>http://localhost:4000/ViewProj-Blog/part-2.2-projection-matrix</id><content type="html" xml:base="http://localhost:4000/ViewProj-Blog/part-2.2-projection-matrix/"><![CDATA[<style>
+.post-nav {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid #444;
+  font-family: Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 15px;
+}
+.post-nav a {
+  color: #569cd6;
+  text-decoration: none;
+  padding: 10px 16px;
+  background: #1e1e1e;
+  border-radius: 6px;
+  transition: background 0.2s ease;
+}
+.post-nav a:hover {
+  background: #2d2d2d;
+}
+</style>
+
+<h3 id="what-is-the-projection-matrix"><strong>What is the Projection Matrix?</strong></h3>
 
 <p>While the View Matrix transforms world coordinates into the camera’s local space, the Projection Matrix transforms that 3D camera space into a clipped 2D space.<br />
 This is the step where perspective is introduced where far objects look smaller, and near objects look larger.</p>
@@ -576,10 +657,41 @@ What defines a Reverse-Z projection is simply the depth mapping after the perspe
   <p>As long as this mapping holds true, it qualifies as Reverse-Z.</p>
 </blockquote>
 
-<p><em>We’ll later see how this matrix fits into the full pipeline and how the 3D position finally lands on your screen.</em></p>]]></content><author><name>z1rp</name></author><summary type="html"><![CDATA[What is the Projection Matrix?]]></summary></entry><entry><title type="html">Part 2.3: View Projection Matrix</title><link href="http://localhost:4000/ViewProj-Blog/part-2.3-View-Projection-matrix/" rel="alternate" type="text/html" title="Part 2.3: View Projection Matrix" /><published>2025-07-17T00:00:00+05:30</published><updated>2025-07-17T00:00:00+05:30</updated><id>http://localhost:4000/ViewProj-Blog/part-2.3-View-Projection-matrix</id><content type="html" xml:base="http://localhost:4000/ViewProj-Blog/part-2.3-View-Projection-matrix/"><![CDATA[<h3 id="what-is-the-view-projection-matrix"><strong>What is the View-Projection Matrix?</strong></h3>
+<p>you can also find another explanation of the projection matrix by me here:<br />
+<a href="https://zero-irp.github.io/Proj-Blog/part-2-projection-matrix/">Math at Scale: Reversing the AAA Projection Matrix - Part 2: What is the Projection Matrix?</a></p>
+
+<p><em>We’ll later see how this matrix fits into the full pipeline and how the 3D position finally lands on your screen.</em></p>
+
+<div class="post-nav">
+  <a href="/ViewProj-Blog/part-2.1-view-matrix/">&laquo; Part 2.1: View Matrix</a>
+  <a href="/ViewProj-Blog/part-2.3-View-Projection-matrix/">Part 2.3: View Projection Matrix &raquo;</a>
+</div>]]></content><author><name>z1rp</name></author><summary type="html"><![CDATA[]]></summary></entry><entry><title type="html">Part 2.3: View Projection Matrix</title><link href="http://localhost:4000/ViewProj-Blog/part-2.3-View-Projection-matrix/" rel="alternate" type="text/html" title="Part 2.3: View Projection Matrix" /><published>2025-07-17T00:00:00+05:30</published><updated>2025-07-17T00:00:00+05:30</updated><id>http://localhost:4000/ViewProj-Blog/part-2.3-View-Projection-matrix</id><content type="html" xml:base="http://localhost:4000/ViewProj-Blog/part-2.3-View-Projection-matrix/"><![CDATA[<style>
+.post-nav {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid #444;
+  font-family: Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 15px;
+}
+.post-nav a {
+  color: #569cd6;
+  text-decoration: none;
+  padding: 10px 16px;
+  background: #1e1e1e;
+  border-radius: 6px;
+  transition: background 0.2s ease;
+}
+.post-nav a:hover {
+  background: #2d2d2d;
+}
+</style>
+
+<h3 id="what-is-the-view-projection-matrix"><strong>What is the View-Projection Matrix?</strong></h3>
 
 <p>The View-Projection Matrix (VP Matrix) is just the View Matrix and Projection Matrix multiplied together:</p>
-<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">ViewProjection</span> <span class="o">=</span> <span class="n">Projection</span> <span class="o">*</span> <span class="n">View</span>  
+<div class="language-cpp highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">ViewProjection</span> <span class="o">=</span> <span class="n">View</span> <span class="o">*</span> <span class="n">Projection</span>
 </code></pre></div></div>
 <blockquote>
   <p>Note: Matrix multiplication is not commutative:- A * B ≠ B * A<br />
@@ -602,7 +714,35 @@ full world-to-clip transformation and decides what actually shows up on screen.<
 <a href="http://www.codinglabs.net/article_world_view_projection_matrix.aspx">World, View and Projection Transformation Matrices</a></p>
 
 <p><em>This is all we’ll cover about the View-Projection matrix for now. The goal isn’t to dive deep into 3D rendering, but to build a clear, 
-working understanding of how it functions at a basic level.</em></p>]]></content><author><name>z1rp</name></author><summary type="html"><![CDATA[What is the View-Projection Matrix?]]></summary></entry><entry><title type="html">Part 3: Finding &amp;amp; Reversing Matrices</title><link href="http://localhost:4000/ViewProj-Blog/part-3-finding-and-reversing-matrices/" rel="alternate" type="text/html" title="Part 3: Finding &amp;amp; Reversing Matrices" /><published>2025-07-17T00:00:00+05:30</published><updated>2025-07-17T00:00:00+05:30</updated><id>http://localhost:4000/ViewProj-Blog/part-3-finding-and-reversing-matrices</id><content type="html" xml:base="http://localhost:4000/ViewProj-Blog/part-3-finding-and-reversing-matrices/"><![CDATA[<h3 id="how-we-search-for-matrices-in-memory"><strong>How We Search for Matrices in Memory</strong></h3>
+working understanding of how it functions at a basic level.</em></p>
+
+<div class="post-nav">
+  <a href="/ViewProj-Blog/part-2.2-projection-matrix/">&laquo; Part 2.2: Projection Matrix</a>
+  <a href="/ViewProj-Blog/part-3-finding-and-reversing-matrices/">Part 3: Finding &amp; Reversing Matrices &raquo;</a>
+</div>]]></content><author><name>z1rp</name></author><summary type="html"><![CDATA[]]></summary></entry><entry><title type="html">Part 3: Finding &amp;amp; Reversing Matrices</title><link href="http://localhost:4000/ViewProj-Blog/part-3-finding-and-reversing-matrices/" rel="alternate" type="text/html" title="Part 3: Finding &amp;amp; Reversing Matrices" /><published>2025-07-17T00:00:00+05:30</published><updated>2025-07-17T00:00:00+05:30</updated><id>http://localhost:4000/ViewProj-Blog/part-3-finding-and-reversing-matrices</id><content type="html" xml:base="http://localhost:4000/ViewProj-Blog/part-3-finding-and-reversing-matrices/"><![CDATA[<style>
+.post-nav {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid #444;
+  font-family: Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 15px;
+}
+.post-nav a {
+  color: #569cd6;
+  text-decoration: none;
+  padding: 10px 16px;
+  background: #1e1e1e;
+  border-radius: 6px;
+  transition: background 0.2s ease;
+}
+.post-nav a:hover {
+  background: #2d2d2d;
+}
+</style>
+
+<h3 id="how-we-search-for-matrices-in-memory"><strong>How We Search for Matrices in Memory</strong></h3>
 
 <p>A common approach is to switch Cheat Engine’s value type in <em>float</em> and then:</p>
 
@@ -762,7 +902,35 @@ If you ever want to test your sanity, try reversing a Denuvo game.</p>
 <p><img src="/ViewProj-Blog/assets/images/part-3/discrepency-vp-with-vp-multiply.png" alt="ESP-Image1" /><br />
 Here for some reason it doesn’t quite match’s up although quite similar.</p>
 
-<p><em>Next Step: Time to start tracing back the functions that write to the final View-Projection Matrix in memory.</em></p>]]></content><author><name>z1rp</name></author><summary type="html"><![CDATA[How We Search for Matrices in Memory]]></summary></entry><entry><title type="html">Part 4.1: Tracing the Matrix Construction Path</title><link href="http://localhost:4000/ViewProj-Blog/part-4.1-tracing-matrix-construction/" rel="alternate" type="text/html" title="Part 4.1: Tracing the Matrix Construction Path" /><published>2025-07-17T00:00:00+05:30</published><updated>2025-07-17T00:00:00+05:30</updated><id>http://localhost:4000/ViewProj-Blog/part-4.1-tracing-matrix-construction</id><content type="html" xml:base="http://localhost:4000/ViewProj-Blog/part-4.1-tracing-matrix-construction/"><![CDATA[<style>
+<p><em>Next Step: Time to start tracing back the functions that write to the final View-Projection Matrix in memory.</em></p>
+
+<div class="post-nav">
+  <a href="/ViewProj-Blog/part-2.3-View-Projection-matrix/">&laquo; Part 2.3: View Projection Matrix</a>
+  <a href="/ViewProj-Blog/part-4.1-tracing-matrix-construction/">Part 4.1: Tracing the Matrix Construction Path &raquo;</a>
+</div>]]></content><author><name>z1rp</name></author><summary type="html"><![CDATA[]]></summary></entry><entry><title type="html">Part 4.1: Tracing the Matrix Construction Path</title><link href="http://localhost:4000/ViewProj-Blog/part-4.1-tracing-matrix-construction/" rel="alternate" type="text/html" title="Part 4.1: Tracing the Matrix Construction Path" /><published>2025-07-17T00:00:00+05:30</published><updated>2025-07-17T00:00:00+05:30</updated><id>http://localhost:4000/ViewProj-Blog/part-4.1-tracing-matrix-construction</id><content type="html" xml:base="http://localhost:4000/ViewProj-Blog/part-4.1-tracing-matrix-construction/"><![CDATA[<style>
+.post-nav {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid #444;
+  font-family: Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 15px;
+}
+.post-nav a {
+  color: #569cd6;
+  text-decoration: none;
+  padding: 10px 16px;
+  background: #1e1e1e;
+  border-radius: 6px;
+  transition: background 0.2s ease;
+}
+.post-nav a:hover {
+  background: #2d2d2d;
+}
+</style>
+
+<style>
 .ida-code{
   background:#1e1e1e;
   color:#dcdcdc;
@@ -1018,7 +1186,35 @@ But this lacks the insight into how the engine computes it internally, So we are
 </blockquote>
 
 <p><em>Now that we have confirmed that this is probably the matrix construction function of the View-Projection matrix we can now start reversing 
-its many SIMD instructions to see what exactly it does with the camera world matrix and projection matrix.</em></p>]]></content><author><name>z1rp</name></author><summary type="html"><![CDATA[]]></summary></entry><entry><title type="html">Part 4.2: Reversing SIMD Instructions for Matrix Math</title><link href="http://localhost:4000/ViewProj-Blog/part-4.2-reversing-simd-instrustions/" rel="alternate" type="text/html" title="Part 4.2: Reversing SIMD Instructions for Matrix Math" /><published>2025-07-17T00:00:00+05:30</published><updated>2025-07-17T00:00:00+05:30</updated><id>http://localhost:4000/ViewProj-Blog/part-4.2-reversing-simd-instrustions</id><content type="html" xml:base="http://localhost:4000/ViewProj-Blog/part-4.2-reversing-simd-instrustions/"><![CDATA[<style>
+its many SIMD instructions to see what exactly it does with the camera world matrix and projection matrix.</em></p>
+
+<div class="post-nav">
+  <a href="/ViewProj-Blog/part-3-finding-and-reversing-matrices/">&laquo; Previous: Part 3</a>
+  <a href="/ViewProj-Blog/part-4.2-reversing-simd-instrustions/">Next: Part 4.2 &raquo;</a>
+</div>]]></content><author><name>z1rp</name></author><summary type="html"><![CDATA[]]></summary></entry><entry><title type="html">Part 4.2: Reversing SIMD Instructions for Matrix Math</title><link href="http://localhost:4000/ViewProj-Blog/part-4.2-reversing-simd-instrustions/" rel="alternate" type="text/html" title="Part 4.2: Reversing SIMD Instructions for Matrix Math" /><published>2025-07-17T00:00:00+05:30</published><updated>2025-07-17T00:00:00+05:30</updated><id>http://localhost:4000/ViewProj-Blog/part-4.2-reversing-simd-instrustions</id><content type="html" xml:base="http://localhost:4000/ViewProj-Blog/part-4.2-reversing-simd-instrustions/"><![CDATA[<style>
+.post-nav {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid #444;
+  font-family: Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 15px;
+}
+.post-nav a {
+  color: #569cd6;
+  text-decoration: none;
+  padding: 10px 16px;
+  background: #1e1e1e;
+  border-radius: 6px;
+  transition: background 0.2s ease;
+}
+.post-nav a:hover {
+  background: #2d2d2d;
+}
+</style>
+
+<style>
 .ida-code{
   background:#1e1e1e;
   color:#dcdcdc;
@@ -1721,7 +1917,35 @@ the skybox always stays centered on you, and only rotation matters</p>
 </blockquote>
 
 <p><em>That wraps up the partial View-Projection matrix construction. In the next post, we’ll look at sub_7FBF10, 
-the function that builds the full View-Projection Matrix.</em></p>]]></content><author><name>z1rp</name></author><summary type="html"><![CDATA[]]></summary></entry><entry><title type="html">4.3: Completing the View-Projection Matrix</title><link href="http://localhost:4000/ViewProj-Blog/part-4.3-completing-view-proj-matrix/" rel="alternate" type="text/html" title="4.3: Completing the View-Projection Matrix" /><published>2025-07-17T00:00:00+05:30</published><updated>2025-07-17T00:00:00+05:30</updated><id>http://localhost:4000/ViewProj-Blog/part-4.3-completing-view-proj-matrix</id><content type="html" xml:base="http://localhost:4000/ViewProj-Blog/part-4.3-completing-view-proj-matrix/"><![CDATA[<style>
+the function that builds the full View-Projection Matrix.</em></p>
+
+<div class="post-nav">
+  <a href="/ViewProj-Blog/part-4.1-tracing-matrix-construction/">&laquo; Previous: Part 4.1</a>
+  <a href="/ViewProj-Blog/part-4.3-completing-view-proj-matrix/">Next: Part 4.3 &raquo;</a>
+</div>]]></content><author><name>z1rp</name></author><summary type="html"><![CDATA[]]></summary></entry><entry><title type="html">Part 4.3: Completing the View-Projection Matrix</title><link href="http://localhost:4000/ViewProj-Blog/part-4.3-completing-view-proj-matrix/" rel="alternate" type="text/html" title="Part 4.3: Completing the View-Projection Matrix" /><published>2025-07-17T00:00:00+05:30</published><updated>2025-07-17T00:00:00+05:30</updated><id>http://localhost:4000/ViewProj-Blog/part-4.3-completing-view-proj-matrix</id><content type="html" xml:base="http://localhost:4000/ViewProj-Blog/part-4.3-completing-view-proj-matrix/"><![CDATA[<style>
+.post-nav {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid #444;
+  font-family: Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 15px;
+}
+.post-nav a {
+  color: #569cd6;
+  text-decoration: none;
+  padding: 10px 16px;
+  background: #1e1e1e;
+  border-radius: 6px;
+  transition: background 0.2s ease;
+}
+.post-nav a:hover {
+  background: #2d2d2d;
+}
+</style>
+
+<style>
 .ida-code{
   background:#1e1e1e;
   color:#dcdcdc;
@@ -2272,7 +2496,35 @@ Not only does this resolve the original discrepancy, but it also provides a conc
 reverse engineering practice.</p>
 
 <p><em>Next up: Trimming down redundant SIMD instructions using assembly patching and detour hooking. Don’t expect a real performance gain here, 
-it’s more about recognizing wasted ops and experimenting with how far we can push the pipeline by hand.</em></p>]]></content><author><name>z1rp</name></author><summary type="html"><![CDATA[]]></summary></entry><entry><title type="html">4.4: Optimizing Redundant SIMD Instructions</title><link href="http://localhost:4000/ViewProj-Blog/part-4.4-optimizing-redundant-simd-instructions/" rel="alternate" type="text/html" title="4.4: Optimizing Redundant SIMD Instructions" /><published>2025-07-17T00:00:00+05:30</published><updated>2025-07-17T00:00:00+05:30</updated><id>http://localhost:4000/ViewProj-Blog/part-4.4-optimizing-redundant-simd-instructions</id><content type="html" xml:base="http://localhost:4000/ViewProj-Blog/part-4.4-optimizing-redundant-simd-instructions/"><![CDATA[<style>
+it’s more about recognizing wasted ops and experimenting with how far we can push the pipeline by hand.</em></p>
+
+<div class="post-nav">
+  <a href="/ViewProj-Blog/part-4.2-reversing-simd-instrustions/">&laquo; Previous: Part 4.2 </a>
+  <a href="/ViewProj-Blog/part-4.4-optimizing-redundant-simd-instructions/">Next: Part 4.4 &raquo;</a>
+</div>]]></content><author><name>z1rp</name></author><summary type="html"><![CDATA[]]></summary></entry><entry><title type="html">Part 4.4: Optimizing Redundant SIMD Instructions</title><link href="http://localhost:4000/ViewProj-Blog/part-4.4-optimizing-redundant-simd-instructions/" rel="alternate" type="text/html" title="Part 4.4: Optimizing Redundant SIMD Instructions" /><published>2025-07-17T00:00:00+05:30</published><updated>2025-07-17T00:00:00+05:30</updated><id>http://localhost:4000/ViewProj-Blog/part-4.4-optimizing-redundant-simd-instructions</id><content type="html" xml:base="http://localhost:4000/ViewProj-Blog/part-4.4-optimizing-redundant-simd-instructions/"><![CDATA[<style>
+.post-nav {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid #444;
+  font-family: Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 15px;
+}
+.post-nav a {
+  color: #569cd6;
+  text-decoration: none;
+  padding: 10px 16px;
+  background: #1e1e1e;
+  border-radius: 6px;
+  transition: background 0.2s ease;
+}
+.post-nav a:hover {
+  background: #2d2d2d;
+}
+</style>
+
+<style>
 .asm64-code {
   background: #1e1e1e;
   color: #c5c8c6;
@@ -2418,7 +2670,35 @@ and simply storing it at the appropriate memory address:</p>
 
 <p>Game runs as we suspected without any artifacts in game or in UI:</p>
 
-<p><img src="/ViewProj-Blog/assets/images/part-4.4/game_runs.gif" alt="ESP-Image1" /></p>]]></content><author><name>z1rp</name></author><summary type="html"><![CDATA[]]></summary></entry><entry><title type="html">Part 4.5: Detour Hooking to Optimize SIMD Operations</title><link href="http://localhost:4000/ViewProj-Blog/part-4.5-detour-hooking-simd-operations/" rel="alternate" type="text/html" title="Part 4.5: Detour Hooking to Optimize SIMD Operations" /><published>2025-07-17T00:00:00+05:30</published><updated>2025-07-17T00:00:00+05:30</updated><id>http://localhost:4000/ViewProj-Blog/part-4.5-detour-hooking-simd-operations</id><content type="html" xml:base="http://localhost:4000/ViewProj-Blog/part-4.5-detour-hooking-simd-operations/"><![CDATA[<style>
+<p><img src="/ViewProj-Blog/assets/images/part-4.4/game_runs.gif" alt="ESP-Image1" /></p>
+
+<div class="post-nav">
+  <a href="/ViewProj-Blog/part-4.3-completing-view-proj-matrix/">&laquo; Previous: Part 4.3 </a>
+  <a href="/ViewProj-Blog/part-4.5-detour-hooking-simd-operations/">Next: Part 4.5 &raquo;</a>
+</div>]]></content><author><name>z1rp</name></author><summary type="html"><![CDATA[]]></summary></entry><entry><title type="html">Part 4.5: Detour Hooking to Optimize SIMD Operations</title><link href="http://localhost:4000/ViewProj-Blog/part-4.5-detour-hooking-simd-operations/" rel="alternate" type="text/html" title="Part 4.5: Detour Hooking to Optimize SIMD Operations" /><published>2025-07-17T00:00:00+05:30</published><updated>2025-07-17T00:00:00+05:30</updated><id>http://localhost:4000/ViewProj-Blog/part-4.5-detour-hooking-simd-operations</id><content type="html" xml:base="http://localhost:4000/ViewProj-Blog/part-4.5-detour-hooking-simd-operations/"><![CDATA[<style>
+.post-nav {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid #444;
+  font-family: Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 15px;
+}
+.post-nav a {
+  color: #569cd6;
+  text-decoration: none;
+  padding: 10px 16px;
+  background: #1e1e1e;
+  border-radius: 6px;
+  transition: background 0.2s ease;
+}
+.post-nav a:hover {
+  background: #2d2d2d;
+}
+</style>
+
+<style>
 .cpp-code {
   background: #1e1e1e;
   color: #dcdcdc;
@@ -2865,4 +3145,9 @@ The same output could be achieved with far fewer operations, which is why we tre
 </blockquote>
 
 <p><em>The performance gain here is so minuscule you’d honestly get more FPS by closing a calculator app running in the background. But it teaches a 
-bigger lesson: systems don’t always do things the cleanest way, and compilers sure as hell aren’t infallible. Do not blindly trust compilers!</em></p>]]></content><author><name>z1rp</name></author><summary type="html"><![CDATA[]]></summary></entry></feed>
+bigger lesson: systems don’t always do things the cleanest way, and compilers sure as hell aren’t infallible. Do not blindly trust compilers!</em></p>
+
+<div class="post-nav">
+  <a href="/ViewProj-Blog/part-4.4-optimizing-redundant-simd-instructions/">&laquo; Previous: Part 4.4 </a>
+  <a href="/ViewProj-Blog/part-5-trampoline-hooking/">Next: Part 5 &raquo;</a>
+</div>]]></content><author><name>z1rp</name></author><summary type="html"><![CDATA[]]></summary></entry></feed>

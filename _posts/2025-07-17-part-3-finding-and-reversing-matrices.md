@@ -5,6 +5,29 @@ date: 2025-07-17 00:00:00 +0530
 permalink: /part-3-finding-and-reversing-matrices/
 ---
 
+<style>
+.post-nav {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid #444;
+  font-family: Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 15px;
+}
+.post-nav a {
+  color: #569cd6;
+  text-decoration: none;
+  padding: 10px 16px;
+  background: #1e1e1e;
+  border-radius: 6px;
+  transition: background 0.2s ease;
+}
+.post-nav a:hover {
+  background: #2d2d2d;
+}
+</style>
+
 ### **How We Search for Matrices in Memory**
 
 A common approach is to switch Cheat Engine's value type in *float* and then:
@@ -149,7 +172,10 @@ Here for some reason it doesn't quite match's up although quite similar.
 
 *Next Step: Time to start tracing back the functions that write to the final View-Projection Matrix in memory.*
 
-
+<div class="post-nav">
+  <a href="{{ site.baseurl }}/part-2.3-View-Projection-matrix/">&laquo; Part 2.3: View Projection Matrix</a>
+  <a href="{{ site.baseurl }}/part-4.1-tracing-matrix-construction/">Part 4.1: Tracing the Matrix Construction Path &raquo;</a>
+</div>
 
 
 

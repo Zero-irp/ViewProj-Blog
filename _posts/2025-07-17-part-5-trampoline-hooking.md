@@ -6,6 +6,29 @@ permalink: /part-5-trampoline-hooking/
 ---
 
 <style>
+.post-nav {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid #444;
+  font-family: Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 15px;
+}
+.post-nav a {
+  color: #569cd6;
+  text-decoration: none;
+  padding: 10px 16px;
+  background: #1e1e1e;
+  border-radius: 6px;
+  transition: background 0.2s ease;
+}
+.post-nav a:hover {
+  background: #2d2d2d;
+}
+</style>
+
+<style>
 .cpp-code {
   background: #1e1e1e;
   color: #dcdcdc;
@@ -328,7 +351,10 @@ Now, our external process polls the reserved memory region (entityAddr) in the t
 This way, every time the Z-axis instruction executes for some entity, we capture it once and stash it in uniqueEntities. Later, we can loop 
 through this set and use their positions for ESP drawing.
 
-
+ <div class="post-nav">
+  <a href="{{ site.baseurl }}/part-4.5-detour-hooking-simd-operations/">&laquo; Previous: Part 4.5 </a>
+  <a href="{{ site.baseurl }}/part-6-w2s/">Next: Part 6 &raquo;</a>
+</div>
 
 
 

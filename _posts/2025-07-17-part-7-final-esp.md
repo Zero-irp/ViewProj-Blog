@@ -6,6 +6,29 @@ permalink: /part-7-final-esp/
 ---
 
 <style>
+.post-nav {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid #444;
+  font-family: Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 15px;
+}
+.post-nav a {
+  color: #569cd6;
+  text-decoration: none;
+  padding: 10px 16px;
+  background: #1e1e1e;
+  border-radius: 6px;
+  transition: background 0.2s ease;
+}
+.post-nav a:hover {
+  background: #2d2d2d;
+}
+</style>
+
+<style>
 .cpp-code {
   background: #1e1e1e;
   color: #dcdcdc;
@@ -152,3 +175,7 @@ Result:
 All this reversing just because the inverse of the camera world matrix multiplied with the projection matrix didn’t yield the correct VP matrix. From 3D graphics to tracing matrices, 
 to reversing SIMD instructions, to detour hooks, to trampolines, to ESP, we’ve done a lot. There’s honestly way more to how an “ESP” really works than what I’ve covered here, but I’m 
 just going to end it here, I’m sick of writing all this.
+
+<div class="post-nav">
+  <a href="{{ site.baseurl }}/part-6-w2s/">&laquo; Part 6: World To Screen Explanation And Code (Depth)</a>
+</div>
