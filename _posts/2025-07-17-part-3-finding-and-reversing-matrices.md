@@ -30,6 +30,9 @@ permalink: /part-3-finding-and-reversing-matrices/
 
 ### **How We Search for Matrices in Memory**
 
+> UPDATE: I have  written all the methods I use personally use to find transformation matrices in my latest blog post!  
+[Math at Scale: Reversing the AAA Projection Matrix - Part 3: Methods to Find The Projection Matrix](https://zero-irp.github.io/Proj-Blog/part-3-methods-to-find-proj-mat/)                                                        
+
 A common approach is to switch Cheat Engine's value type in *float* and then:
 
 1. Look Directly up and scan for the value *1.0f*.
